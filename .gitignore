@@ -35,3 +35,9 @@ logs/
 
 # Docs
 /docs/
+# Small result artifacts (metrics tables, plots) ARE tracked so they can be
+# shared between the Mac and the cluster through git. Raw features/logs stay
+# ignored above.
+!orca_baseline/results*/
+!orca_baseline/results*/*.tsv
+!orca_baseline/results*/*.png
