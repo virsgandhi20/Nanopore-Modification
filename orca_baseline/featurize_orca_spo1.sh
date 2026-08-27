@@ -86,6 +86,12 @@ for BC in $BARCODES; do
 
     [ -s $W/$BC.pileup ] || $SAM mpileup -f $REF $BAM > $W/$BC.pileup 2>/dev/null
 
+    # ORCA's index_pileup never flushes the final contig (the index is only
+    # written when the contig CHANGES), so the last contig of every pileup is
+    # silently dropped -- which is the WHOLE file for a single-contig genome.
+    # A sentinel line forces the flush; the sentinel itself is never indexed.
+    grep -q '^ZZZ_SENTINEL' $W/$BC.pileup || printf 'ZZZ_SENTINEL\t1\tN\t0\t*\t*\n' >> $W/$BC.pileup
+
     orca-pred_signal_feature_ext --eventalign $W/$BC.eventalign --work_dir $W --prefix $BC --n_processes $T
     orca-pred_bascal_feature_ext  --pileup     $W/$BC.pileup     --work_dir $W --prefix $BC --n_processes $T
     orca-pred_feature_merge       --work_dir   $W --prefix $BC --n_processes $T

@@ -42,6 +42,12 @@ for COND in $CONDITIONS; do
     # pileup with the stable samtools (env one segfaults)
     $SAM mpileup -f $REF $W/$COND.sorted.bam > $W/$COND.pileup 2>/dev/null
 
+    # ORCA's index_pileup never flushes the final contig (the index is only
+    # written when the contig CHANGES), so the last contig of every pileup is
+    # silently dropped -- which is the WHOLE file for a single-contig genome.
+    # A sentinel line forces the flush; the sentinel itself is never indexed.
+    grep -q '^ZZZ_SENTINEL' $W/$COND.pileup || printf 'ZZZ_SENTINEL\t1\tN\t0\t*\t*\n' >> $W/$COND.pileup
+
     # ORCA feature extraction (same --work_dir + --prefix across all three)
     orca-pred_signal_feature_ext --eventalign $W/$COND.eventalign --work_dir $W --prefix $COND --n_processes $T
     orca-pred_bascal_feature_ext  --pileup     $W/$COND.pileup     --work_dir $W --prefix $COND --n_processes $T
