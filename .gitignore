@@ -24,6 +24,11 @@ logs/
 *.bai
 *.fast5
 
+# Pretrained checkpoints are the exception: small (~1MB each), committed for
+# reproducibility of the numbers in the README.
+!checkpoints/
+!checkpoints/**
+
 # Plot/output scratch
 *.out
 *.log
@@ -33,8 +38,11 @@ logs/
 .DS_Store
 *.swp
 
-# Docs
-/docs/
+# Docs (background reading, not meant for the public repo) -- except the
+# result figures referenced from the README
+/docs/*
+!/docs/figures/
+!/docs/figures/**
 # wandb run dirs
 wandb/
 **/wandb/

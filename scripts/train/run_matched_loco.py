@@ -123,6 +123,12 @@ WANDB_PROJECT = os.environ.get('WANDB_PROJECT', 'rawmod')
 
 CHEMS = ('5hmU', '4mC', '6mA', '5mC', '5hmC')
 
+# Fixed independent of --seed: every train/test split (mixed_split, pos_hash_split,
+# subsample_negatives) must stay byte-identical across a --seed replicate run, so a
+# different result reflects training stochasticity, not a different test set. Only
+# R.set_seed(hp.seed) (weight init, dropout, data-loader shuffling) responds to --seed.
+SPLIT_SEED = 42
+
 # Reference base(s) at the candidate centre that carry each chemistry, forward
 # strand. 5hmU replaces T (mod_map marks forward-T only). 6mA is A on either
 # strand -> forward A(+)/T(-). 4mC/5mC/5hmC are C on either strand -> C(+)/G(-).
@@ -384,11 +390,12 @@ def mixed_split(pool, is_pos, neg_mask, hp):
     chemistries + capped controls) -- the 'mixed' in-distribution fold. Factored out
     so a downstream analysis (e.g. a post-hoc embedding probe) can recompute the
     EXACT same train/test image indices used to train the mixed checkpoint, without
-    re-deriving the split logic. Deterministic given (pool, hp.seed)."""
+    re-deriving the split logic. Deterministic given (pool, SPLIT_SEED) -- NOT hp.seed,
+    so this stays identical across a --seed replicate run."""
     keep = np.nonzero(is_pos | neg_mask)[0]
     tr, _, te, stats = split_position_groups(
         pool.labels[keep], [pool.position_keys[i] for i in keep],
-        val_frac=0.0, test_frac=0.15, seed=hp.seed)
+        val_frac=0.0, test_frac=0.15, seed=SPLIT_SEED)
     train_idx, test_idx = keep[tr], keep[te]
     R.assert_disjoint(train_idx, test_idx, pool, 'mixed')
     return train_idx, test_idx, stats
@@ -418,6 +425,12 @@ def main():
                     help="'mixed' or 'loco_<CHEM>' with CHEM in " + '/'.join(CHEMS))
     ap.add_argument('--out-dir', required=True)
     ap.add_argument('--epochs', type=int, default=None)
+    ap.add_argument('--seed', type=int, default=None,
+                    help='Overrides ONLY training stochasticity (weight init, dropout, '
+                         'data-loader shuffling, curriculum stage-1 -> stage-2 handoff) -- '
+                         'for a clean replicate-seed run. Deliberately does NOT affect '
+                         'SPLIT_SEED (train/test composition stays identical across seeds), '
+                         'so a different result reflects training noise, not a different test set.')
     a = ap.parse_args()
 
     valid = ['mixed', 'all'] + [f'loco_{c}' for c in CHEMS] + [f'logo_{g}' for g in LOGO_GROUPS]
@@ -429,6 +442,8 @@ def main():
     hp = R.HP()
     if a.epochs:
         hp.epochs = a.epochs
+    if a.seed is not None:
+        hp.seed = a.seed
     R.set_seed(hp.seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     out = Path(a.out_dir)
@@ -445,7 +460,7 @@ def main():
     refbase = ref_base_center(pool)
     chem = chem_array(pool, mod_map, refbase)
     is_pos = pool.labels > 0
-    kept_neg = subsample_negatives(pool, seed=hp.seed)
+    kept_neg = subsample_negatives(pool, seed=SPLIT_SEED)
     neg_mask = np.zeros(pool.N, dtype=bool); neg_mask[kept_neg] = True
 
     # Extra-organism curriculum data (BENCH:: prefixed members): stage-2-only,
@@ -610,7 +625,7 @@ def main():
         chem_x = a.fold[len('loco_'):]
         # controls: position-grouped 85/15 over the capped control pool
         ctrl_idx = np.nonzero(neg_mask)[0]
-        tr_ctrl, te_ctrl = pos_hash_split(pool, ctrl_idx, test_frac=0.15, seed=hp.seed)
+        tr_ctrl, te_ctrl = pos_hash_split(pool, ctrl_idx, test_frac=0.15, seed=SPLIT_SEED)
         # test negatives: from CHEM's organism(s) AND ref-base-matched
         bases = CHEM_BASES[chem_x]; orgs = CHEM_ORGS[chem_x]
         te_ctrl = np.array([i for i in te_ctrl
@@ -651,7 +666,7 @@ def main():
               f"(zero-shot held out: {held_chems})", flush=True)
 
         ctrl_idx = np.nonzero(neg_mask)[0]
-        tr_ctrl, te_ctrl_all = pos_hash_split(pool, ctrl_idx, test_frac=0.15, seed=hp.seed)
+        tr_ctrl, te_ctrl_all = pos_hash_split(pool, ctrl_idx, test_frac=0.15, seed=SPLIT_SEED)
         pos_incl = np.nonzero(is_pos & np.isin(chem, include_chems))[0].astype(np.int64)
         train_idx = np.sort(np.concatenate([pos_incl, tr_ctrl]))
         print(f"  train={len(train_idx):,} (pos_incl={len(pos_incl):,} neg={len(tr_ctrl):,})",

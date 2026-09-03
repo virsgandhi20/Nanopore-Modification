@@ -9,9 +9,38 @@ cross-entropy.
 
 ## Status
 
-Training and evaluation are in progress. This README documents how to
-reproduce the pipeline; result tables and figures will be added once a final
-training run completes.
+A trained checkpoint is available (`checkpoints/results20_sad_dim16/`, see
+"Pretrained checkpoint" below) and is the current best recipe. Training and
+evaluation on additional external datasets are ongoing; this README documents
+how to reproduce the pipeline and how to test the current checkpoint.
+
+## Pretrained checkpoint
+
+`checkpoints/results20_sad_dim16/` holds one `ConvFormerV2` checkpoint per
+fold from the current best recipe (`SUPCON_DIM=128`, `SUPCON_TEMP=0.20`,
+`SAD_DIM=16`, otherwise the leak-fixed recipe in "Training and evaluation"
+below). `mixed.pt` is the general-purpose checkpoint — trained on all five
+chemistries — and is the one to use for scoring new data (see "Scoring
+external data"). The `loco_<CHEM>.pt` checkpoints hold out `CHEM` entirely
+from training and exist to reproduce the zero-shot numbers below; they are
+not general-purpose and should not be used to score `CHEM` sites in new data.
+
+| Fold | AUROC | AUPRC | macro F1 | n_pos / n_test |
+|---|---:|---:|---:|---:|
+| `mixed` (in-distribution) | 0.995 | 0.999 | 0.958 | 39,028 / 51,423 |
+| `loco_5mC` (zero-shot) | 0.868 | 0.687 | 0.780 | 1,174 / 4,049 |
+| `loco_5hmC` (zero-shot) | 0.875 | 0.582 | 0.750 | 621 / 3,496 |
+| `loco_6mA` (zero-shot) | 0.818 | 0.857 | 0.716 | 11,716 / 19,025 |
+| `loco_4mC` (zero-shot) | 0.648 | 0.808 | 0.400 | 4,780 / 7,181 |
+| `loco_5hmU` (zero-shot) | 0.761 | 0.929 | 0.576 | 4,658 / 5,707 |
+
+Average zero-shot (`loco_*`) AUROC: 0.794. `auroc` is threshold-free and
+comparable across folds; see "Training and evaluation" below for what the
+other columns mean and their caveats (`loco_4mC`'s low macro F1 in particular
+reflects a per-fold threshold choice, not the same generalization gap `auroc`
+shows).
+
+![Zero-shot AUROC by held-out chemistry](docs/figures/loco_results20_sad_dim16.png)
 
 ## Overview
 
@@ -168,12 +197,22 @@ SUPCON_WEIGHT=1.0 \
 SUPCON_TEMP=0.20 \
 CURRICULUM=1 \
 CURRICULUM_EPOCHS=15 \
-SAD_DIM=32 \
+SAD_DIM=16 \
 SAD_WEIGHT=1.0 \
 SAD_ETA=1.0 \
 BCE_WEIGHT=1.0 \
 bash scripts/train/run_matched_loco.sh
 ```
+
+This is the recipe behind `checkpoints/results20_sad_dim16/` (see
+"Pretrained checkpoint" above). `SAD_DIM=16` is the current recommendation —
+a `SUPCON_DIM`/`SAD_DIM` sweep found it matched or beat every other setting
+on average without the fold-specific instability larger `SAD_DIM` values
+showed on the smallest fold (`loco_4mC`, confirmed by a replicate-seed rerun).
+`--seed N` reruns training stochasticity only (weight init, dropout,
+data-loader shuffling); it deliberately leaves the train/test split
+(`SPLIT_SEED`, fixed at 42) unchanged, so a `--seed` replicate isolates
+training noise from a genuinely different test set.
 
 Each fold is submitted as an independent SLURM job (single GPU, streaming
 from disk, `~7h` per fold on an RTX A5000) and runs in parallel subject to
@@ -203,21 +242,46 @@ position-level counts: multiple pileup images at the same
 
 ### 5. Scoring external data
 
-To score a checkpoint against a site list not covered by the built-in folds:
+Two ways to test the pretrained checkpoint (`checkpoints/results20_sad_dim16/mixed.pt`)
+against data outside the built-in folds, depending on what you start from.
+
+**From a site list** (contig/position pairs, e.g. a candidate BED from a motif
+scan or another tool's calls) — this is the more common case, and the one
+used for the external validations in `analysis/` (e.g. the E. coli and
+Anabaena comparisons against Dorado):
 
 ```bash
 python scripts/test/test_external_sites.py \
   --sites <tsv with contig, pos columns> \
   --pod5 <pod5 dir> --bam <reads_refined.bam> --peaks <peaks_refined.tsv> \
   --gt <ground-truth BED> \
-  --checkpoint <best_model.pt> \
+  --checkpoint checkpoints/results20_sad_dim16/mixed.pt \
   --out-dir <output dir>
 ```
 
 Ground truth is looked up from `--gt`, not from any label column the input
-file may already carry. The script featurizes exactly the requested sites,
-scores them with the checkpoint, and writes per-site scores and a metrics
-summary in the same format as `run_matched_loco.py`.
+file may already carry — this matters when comparing against another tool's
+own output, since that tool's calls should never be used as the label for
+scoring itself. The script featurizes exactly the requested sites, scores
+them with the checkpoint, and writes per-site scores and a metrics summary in
+the same format as `run_matched_loco.py`.
+
+**From an existing `features.h5`** (already featurized by this repo's own
+pipeline, e.g. a benchmark organism's genome-wide pileup):
+
+```bash
+python scripts/test/score_genome.py \
+  --h5 <features.h5> \
+  --dataset <name> \
+  --checkpoint checkpoints/results20_sad_dim16/mixed.pt \
+  --out-dir <output dir>
+```
+
+`score_genome.py`'s default `--checkpoint` is the leave-one-dataset-out fold
+matching `--dataset`, for a non-circularity guarantee when the organism the
+h5 came from was in the training pool; pass `--checkpoint` explicitly (as
+above) to use the general-purpose `mixed` checkpoint instead, e.g. when
+scoring a genuinely external organism never in any training pool.
 
 ## Analysis
 
@@ -238,6 +302,19 @@ reference row happened to land on the other base. The current pipeline
 avoids this by featurizing forward-strand-only (`--strand +`), so a pileup is
 single-strand by construction and the reference-row ambiguity does not arise.
 See `analysis/make_reverse_complement_plots.py` for the original measurement.
+
+The current pipeline's own `--strand both` path (not this repo's convention,
+but a supported option) carried a second, independent instance of the same
+symptom until it was found and fixed during external validation against an
+Anabaena REBASE-motif site set: `get_ref_info_from_bam()` reverse-complemented
+the reference base for every reverse-mapped read, when pysam's
+`get_aligned_pairs(with_seq=True)` already returns it in + strand orientation
+regardless of read strand — so the complement was applied a second time,
+corrupting base identity for roughly half of all reads whenever both strands
+were pooled. This is now fixed (plain reversal, no complementing); `--strand
+both` no longer needs to be avoided for this reason. All checkpoints in
+`checkpoints/` were trained with `--strand +` throughout and were never
+affected by this bug.
 
 **Curriculum-data chemistry overlap.** The seven benchmark organisms and
 hg001/hg002 are unioned into stage-2 training for every fold by default

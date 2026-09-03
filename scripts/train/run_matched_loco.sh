@@ -8,14 +8,17 @@
 # even preloading would fit, but streaming keeps it on the plentiful nodes.
 #
 # Usage (login node):
-#   bash run_matched_loco.sh [--dry-run] [--epochs N]
+#   bash run_matched_loco.sh [--dry-run] [--epochs N] [--seed N]
 set -euo pipefail
 
-DRY_RUN=false; EPOCHS_ARG=""
-for a in "$@"; do
-    case "$a" in
-        --dry-run) DRY_RUN=true ;;
-        [0-9]*)   EPOCHS_ARG="--epochs $a" ;;
+DRY_RUN=false; EPOCHS_ARG=""; SEED_ARG=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dry-run) DRY_RUN=true; shift ;;
+        --epochs)  EPOCHS_ARG="--epochs $2"; shift 2 ;;
+        --seed)    SEED_ARG="--seed $2"; shift 2 ;;
+        [0-9]*)    EPOCHS_ARG="--epochs $1"; shift ;;  # bare number = epochs (back-compat)
+        *)         shift ;;
     esac
 done
 
@@ -77,7 +80,7 @@ fi
 
 submit() { if ${DRY_RUN}; then echo "[dry-run] sbatch $*" >&2; echo 9999; else eval "sbatch --parsable $*"; fi; }
 
-echo "=== rawmod_matched_loco  ->  ${OUTDIR}   epochs=${EPOCHS_ARG:-default}  dry=${DRY_RUN}  partition=${PARTITION} ==="
+echo "=== rawmod_matched_loco  ->  ${OUTDIR}   epochs=${EPOCHS_ARG:-default}  seed=${SEED_ARG:-default}  dry=${DRY_RUN}  partition=${PARTITION} ==="
 for FOLD in "${FOLDS[@]}"; do
     WRAP="${CONDA_INIT} && PILEUP_PRELOAD=0 PILEUP_WORKERS=8 \
 PILEUP_MASK_BASES=${PILEUP_MASK_BASES:-0} \
@@ -86,7 +89,7 @@ CURRICULUM=${CURRICULUM:-0} CURRICULUM_EPOCHS=${CURRICULUM_EPOCHS:-15} \
 SAD_DIM=${SAD_DIM:-0} SAD_WEIGHT=${SAD_WEIGHT:-1.0} SAD_ETA=${SAD_ETA:-1.0} \
 BCE_WEIGHT=${BCE_WEIGHT:-1.0} \
 RAWMOD_DATA_GEN=${RAWMOD_DATA_GEN:-} EXTRA_ORGANISMS=${EXTRA_ORGANISMS:-0} \
-${PYTHON} ${DRIVER} --fold ${FOLD} --out-dir ${OUTDIR} ${EPOCHS_ARG}"
+${PYTHON} ${DRIVER} --fold ${FOLD} --out-dir ${OUTDIR} ${EPOCHS_ARG} ${SEED_ARG}"
     JID=$(submit "${SLURM_COMMON} --job-name=mloco_${FOLD} \
         --output=${LOGDIR}/${FOLD}_%j.out --error=${LOGDIR}/${FOLD}_%j.out \
         --wrap=\"${WRAP}\"")

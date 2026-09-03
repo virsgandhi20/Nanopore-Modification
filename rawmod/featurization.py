@@ -186,7 +186,30 @@ def _revcomp(seq: str) -> str:
 # ── BAM helpers ───────────────────────────────────────────────────────────────
 
 def get_ref_info_from_bam(bam_read):
-    """Return (ref_seq, ref_positions) aligned to read direction (5'→3')."""
+    """Return (ref_seq, ref_positions) aligned to read direction (5'→3').
+
+    BUG FIX (see rawmod_context_snapshot.md / conversation history -- the
+    Anabaena m6A debugging session): `get_aligned_pairs(with_seq=True)`
+    already returns each `rbase` in REFERENCE (+ strand) orientation
+    regardless of the read's own mapped strand -- that is what pysam's
+    MD-tag-derived `with_seq` decoding guarantees, for forward and reverse
+    reads alike (verified directly: fetching reads at a known site showed
+    both `+` and `-` mapped reads reporting the correct + strand base with
+    no orientation correction needed). Reordering `ref_pos` to walk backward
+    for a reverse read is correct and necessary -- it re-aligns the
+    (already correctly-oriented) reference bases to the read's own 5'->3'
+    raw-signal order, which for a reverse-mapped read runs in decreasing
+    genomic-coordinate order. But the previous version ALSO reverse-
+    complemented `ref_seq` itself (`_revcomp`, i.e. reverse AND complement),
+    which wrongly complements an already-correct base a second time. For
+    ANY read processed with `--strand both` (the default), this silently
+    assigned every reverse-mapped read the WRONG nucleotide identity at
+    every position -- corrupting the one-hot base channels, `matches_ref`,
+    and any k-mer-level lookup for raw-signal normalization, for
+    approximately half of all reads. `--strand +` (this repo's own
+    featurization convention; see "Strand handling" in the README) never
+    triggered this branch, so it did not affect data generated that way.
+    """
     pairs = bam_read.get_aligned_pairs(with_seq=True)
     ref_bases = {}
     for qpos, rpos, rbase in pairs:
@@ -201,7 +224,7 @@ def get_ref_info_from_bam(bam_read):
     ref_pos  = list(range(min_rpos, max_rpos + 1))
 
     if bam_read.is_reverse:
-        ref_seq = _revcomp(ref_seq)
+        ref_seq = ref_seq[::-1]   # reverse ORDER only -- bases are already + strand
         ref_pos = ref_pos[::-1]
 
     return ref_seq, ref_pos
