@@ -43,6 +43,13 @@ logs/
 /docs/*
 !/docs/figures/
 !/docs/figures/**
+
+# Research diagnostics and superseded pipelines: kept locally for our own
+# provenance/reference, but out of scope for the public repo, which is meant
+# to contain only how to run and train the model.
+/analysis/
+/archive/
+
 # wandb run dirs
 wandb/
 **/wandb/

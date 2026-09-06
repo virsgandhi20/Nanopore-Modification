@@ -68,8 +68,6 @@ scripts/
   featurize/         featurization entry points for the current pipeline
   train/             shared training/evaluation library, model architecture, and the training entry point
   test/              scoring entry points: built-in test folds and externally supplied site lists
-analysis/            figure generation, diagnostics, and supplementary studies
-archive/             superseded pipelines and alternative model recipes, kept for provenance
 docs/                background reading
 ```
 
@@ -80,8 +78,10 @@ docs/                background reading
 | `scripts/featurize/` | `refeaturize_strand15.py` (matched pool: ONT, SPO1, HP26695), `refeaturize_benchmark.py` (benchmark organisms and human), `featurize_background.py` (background negatives). |
 | `scripts/train/` | `run_pipeline.py` (training loop, evaluation, metrics), `run_convformer_v2.py` (model architecture), `mod_types.py` (modification-chemistry typing), `run_matched_loco.py` / `run_matched_loco.sh` (the training and evaluation entry point). |
 | `scripts/test/` | `score_genome.py` (score a checkpoint against an arbitrary `features.h5`), `test_external_sites.py` (score a checkpoint against an externally supplied site list, ground truth drawn from this repo's own GT bed). |
-| `analysis/` | `orca_remake/` (embedding and clustering diagnostics), `denovo_motif_discovery/` (de novo motif rediscovery from a scored genome), `chem_diversity_sweep/` (training-diversity ablation), plus standalone plotting scripts. |
-| `archive/` | `pipeline2/` (earlier all-genome mixed/LODO/LOMO study), `pipeline1_baseline/` (its Dorado baseline and evaluation scripts), `pipeline4_alternatives/` (DANN, Deep SVDD, and organism-adversarial recipe variants tried and superseded during model development). Not part of the current pipeline; kept for reproducibility of what was tried. |
+
+This repository scopes to how to run and train the model. Diagnostic/analysis
+studies and superseded pipeline generations from development are kept
+elsewhere, out of the public repo.
 
 ## Paths
 
@@ -227,7 +227,7 @@ submitting.
 - `mixed` — a position-grouped 85/15 split over the whole matched pool; the in-distribution reference point.
 - `loco_<CHEM>`, `CHEM` in `5hmU, 4mC, 6mA, 5mC, 5hmC` — leave-one-chemistry-out. Trains on every chemistry except `CHEM` and evaluates zero-shot on `CHEM`. Also excludes any curriculum organism that carries `CHEM` under a different label (see `BENCH_ORG_CHEMS` in `run_matched_loco.py`); without this exclusion, three of the five chemistries leak back into training through the always-on benchmark-organism curriculum data (see "Notes").
 - `logo_<group>`, `group` in `bacteria, plant, mammal` — leave-one-organism-group-out. Holds out an entire curriculum organism group from training and evaluates it zero-shot.
-- `subset_<c1>+<c2>[+c3]` — a training-diversity sweep (2 to 4 of the 5 chemistries in training); see `analysis/chem_diversity_sweep/` and the module docstring in `run_matched_loco.py`. Supplementary; the chemistry-exclusion fix described above is not applied to this fold type, since a single trained model here is evaluated against multiple held-out chemistries at once.
+- `subset_<c1>+<c2>[+c3]` — a training-diversity sweep (2 to 4 of the 5 chemistries in training); see the module docstring in `run_matched_loco.py`. Supplementary; the chemistry-exclusion fix described above is not applied to this fold type, since a single trained model here is evaluated against multiple held-out chemistries at once.
 
 Metrics columns (`metrics/<fold>.tsv`, one row per fold): `micro_f1, mod_f1,
 unmod_f1, macro_f1, mod_prec, mod_rec, auprc, auroc, auroc_sad, threshold,
@@ -247,8 +247,7 @@ against data outside the built-in folds, depending on what you start from.
 
 **From a site list** (contig/position pairs, e.g. a candidate BED from a motif
 scan or another tool's calls) — this is the more common case, and the one
-used for the external validations in `analysis/` (e.g. the E. coli and
-Anabaena comparisons against Dorado):
+used for external validations against other tools (e.g. Dorado):
 
 ```bash
 python scripts/test/test_external_sites.py \
@@ -283,25 +282,16 @@ h5 came from was in the training pool; pass `--checkpoint` explicitly (as
 above) to use the general-purpose `mixed` checkpoint instead, e.g. when
 scoring a genuinely external organism never in any training pool.
 
-## Analysis
-
-```bash
-python analysis/make_reverse_complement_plots.py --out-dir <dir>
-python analysis/visualize_h5_pileup.py --h5 features.h5 --cartoon
-python analysis/orca_remake/recompute_bench_types.py --npz <embeddings_allorg.npz>
-```
-
 ## Notes
 
-**Strand handling.** An earlier pipeline (`archive/pipeline2/`) pooled both
-strands into a single pileup; its reference row could then be built from
-reads in the opposite orientation to its own read rows, so at 6mA sites the
-reference row read approximately 50% A / 50% T although every 6mA is
-genuinely on an A, and `matches_ref` was not meaningful wherever the
-reference row happened to land on the other base. The current pipeline
-avoids this by featurizing forward-strand-only (`--strand +`), so a pileup is
-single-strand by construction and the reference-row ambiguity does not arise.
-See `analysis/make_reverse_complement_plots.py` for the original measurement.
+**Strand handling.** An earlier pipeline pooled both strands into a single
+pileup; its reference row could then be built from reads in the opposite
+orientation to its own read rows, so at 6mA sites the reference row read
+approximately 50% A / 50% T although every 6mA is genuinely on an A, and
+`matches_ref` was not meaningful wherever the reference row happened to land
+on the other base. The current pipeline avoids this by featurizing
+forward-strand-only (`--strand +`), so a pileup is single-strand by
+construction and the reference-row ambiguity does not arise.
 
 The current pipeline's own `--strand both` path (not this repo's convention,
 but a supported option) carried a second, independent instance of the same

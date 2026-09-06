@@ -33,6 +33,10 @@ import torch
 # Resolve imports against THIS repo, not the scratch working copies. Only data and
 # trained checkpoints live on scratch; all code comes from the repo.
 REPO = Path(__file__).resolve().parents[2]          # .../Nanopore-Modification
+# 'archive/pipeline1_baseline' (test_model.py) is not part of this repo -- it's
+# only needed by load_model()'s legacy fallback below, for pre-SupCon/SAD
+# checkpoints not shipped here. Every checkpoint under checkpoints/ carries
+# 'proj.*'/'sad_head.*' and never reaches that fallback.
 for _p in (REPO / 'scripts' / 'train',
            REPO / 'archive' / 'pipeline1_baseline',
            REPO / 'rawmod'):
