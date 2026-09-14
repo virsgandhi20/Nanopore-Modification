@@ -24,11 +24,13 @@ done
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DRIVER="${REPO_DIR}/run_matched_loco.py"
-OUT=/fs/cbcb-scratch/bds062/results/rawmod_matched_loco
+# reproduction: all machine-specific paths are env-overridable so the same
+# script runs from a different user's account (defaults = vgandhi's repro dirs)
+OUT=${OUT:-/fs/nexus-scratch/vgandhi/rawmod_matched_loco}
 OUTDIR=${OUTDIR:-${OUT}/results1}
-LOGDIR=${OUT}/logs
-PYTHON=/fs/nexus-scratch/bds062/envs/mod/bin/python
-CONDA_INIT="source /nfshomes/bds062/miniconda3/etc/profile.d/conda.sh && conda activate /fs/nexus-scratch/bds062/envs/mod"
+LOGDIR=${LOGDIR:-${OUT}/logs}
+PYTHON=${PYTHON:-/fs/nexus-scratch/bds062/envs/mod/bin/python}
+CONDA_INIT=${CONDA_INIT:-"source /nfshomes/bds062/miniconda3/etc/profile.d/conda.sh && conda activate /fs/nexus-scratch/bds062/envs/mod"}
 mkdir -p "${LOGDIR}"
 
 DEFAULT_FOLDS=(mixed loco_5hmU loco_4mC loco_6mA loco_5mC loco_5hmC)
