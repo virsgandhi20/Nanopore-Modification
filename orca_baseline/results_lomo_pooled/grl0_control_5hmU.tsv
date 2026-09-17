@@ -1,0 +1,2 @@
+held_out	precision	precision_std	recall	recall_std	f1	f1_std	auprc	auprc_std	pos_rate	pos_rate_std	lift	lift_std	prec_at_r30	prec_at_r30_std	rank99	rank99_std	eff_rank	eff_rank_std
+5hmU	0.6067	0.0239	0.0009	0.0004	0.0018	0.0008	0.6017	0.0054	0.6002	0.0000	1.0025	0.0090	0.6058	0.0079	23.6667	4.1096	3.9948	0.2017
