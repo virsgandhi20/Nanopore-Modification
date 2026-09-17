@@ -79,6 +79,13 @@ for S in $SAMPLES; do
     # ORCA index_pileup last-contig workaround (see featurize_orca_spo1.sh)
     grep -q '^ZZZ_SENTINEL' $W/$S.pileup || printf 'ZZZ_SENTINEL\t1\tN\t0\t*\t*\n' >> $W/$S.pileup
 
+    # the hpylori_26695 reference carries IUPAC ambiguity codes (R/Y/S/K/M) at
+    # a handful of positions; ORCA's feature merge hard-fails when the pileup
+    # ref base is degenerate while the signal kmer center is concrete. Drop
+    # those rows before basecalling extraction (keep the sentinel). Idempotent.
+    awk -F'\t' '$1=="ZZZ_SENTINEL" || $3 ~ /^[ACGTacgt]$/' $W/$S.pileup > $W/$S.pileup.f \
+        && mv $W/$S.pileup.f $W/$S.pileup
+
     orca-pred_signal_feature_ext --eventalign $W/$S.eventalign --work_dir $W --prefix $S --n_processes $T
     orca-pred_bascal_feature_ext  --pileup     $W/$S.pileup     --work_dir $W --prefix $S --n_processes $T
     orca-pred_feature_merge       --work_dir   $W --prefix $S --n_processes $T
