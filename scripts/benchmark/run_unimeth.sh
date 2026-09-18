@@ -10,13 +10,14 @@
 # UniMeth covers 5mC (CpG/CHG/CHH) and 6mA only; 4mC and 5hmU rows are N/A.
 #
 # Usage: DATASETS="Ecoli_WT_5kHz:6mA:ecoli_dam Anabaena_WT_5kHz:6mA:anabaena" bash run_unimeth.sh
-#   each entry = <benchmark sample>:<mod>:<gt preset or path to gt bed>
+#   each entry = <benchmark sample>:<mod>:<gt>, gt = preset | bed path | motif:<IUPAC>:<offset>:<+|both>
+#   mod = 6mA | 5mC (all contexts) | CpG (human/mouse CpG-only model)
 set -euo pipefail
 
 BENCH=${BENCH:-/fs/cbcb-lab/storm/bds062/data/benchmark}
 REFS=${REFS:-$BENCH/references}
 OUT=${OUT:-/fs/nexus-scratch/vgandhi/unimeth_bench}
-MODELS=${MODELS:-/fs/nexus-scratch/vgandhi/unimeth_models}
+MODELS=${MODELS:-/fs/nexus-scratch/vgandhi/unimeth_models/checkpoints}
 DORADO=${DORADO:-/fs/cbcb-lab/storm/shared/rawhash2/basecallers/dorado-1.4.0-linux-x64/bin/dorado}
 DORADO_MODEL=${DORADO_MODEL:-/fs/nexus-scratch/vgandhi/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0}
 SAM=${SAM:-/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools}
@@ -27,6 +28,7 @@ MIN_COV=${MIN_COV:-10}
 # per-mod model files (names as shipped on the UniMeth Google Drive; override if different)
 MODEL_5mC=${MODEL_5mC:-$MODELS/unimeth_r10.4.1_5kHz_5mC.pt}
 MODEL_6mA=${MODEL_6mA:-$MODELS/unimeth_r10.4.1_5kHz_6mA.pt}
+MODEL_CPG=${MODEL_CPG:-$MODELS/unimeth_r10.4.1_5kHz_CpG.pt}   # human/mouse CpG-only rows
 
 # sample -> reference fasta.gz basename
 declare -A REF=( [Ecoli_WT_5kHz]=ecoli.fa.gz [Ecoli_DM_5kHz]=ecoli.fa.gz [Ecoli_DM_MSssI_5kHz]=ecoli.fa.gz
@@ -63,7 +65,11 @@ for entry in ${DATASETS:?set DATASETS}; do
     fi
 
     # (2) unimeth infer -> per-read TSV
-    if [ "$MOD" = "6mA" ]; then MODEL=$MODEL_6mA; CTX=""; else MODEL=$MODEL_5mC; CTX="--cpg 1 --chg 1 --chh 1"; fi
+    case "$MOD" in
+        6mA)  MODEL=$MODEL_6mA; CTX="" ;;
+        CpG)  MODEL=$MODEL_CPG; CTX="--cpg 1" ;;                   # human/mouse CpG model
+        *)    MODEL=$MODEL_5mC; CTX="--cpg 1 --chg 1 --chh 1" ;;   # all-context 5mC
+    esac
     [ -s $W/calls.tsv ] || unimeth infer --pod5 $POD5 --bam $BAM --model $MODEL \
         --pore_type R10.4.1 --frequency 5khz $CTX --output_format tsv --out $W/calls.tsv --batch_size 256
 
@@ -72,9 +78,19 @@ for entry in ${DATASETS:?set DATASETS}; do
         -i $W/calls.tsv -o $W/sites.tsv --sort
 
     # (4) ground truth: preset name -> generate from the reference; else a BED path
+    # GT spec: a BED path | a motif_gt preset name | motif:<IUPAC>:<offset>:<+|both>
+    # (custom motif lets a mixed preset like hpylori_j99 be restricted to one mod)
     if [ -f "$GT" ]; then GTBED=$GT; else
         GTBED=$W/gt/gt_modified.bed
-        [ -s $GTBED ] || python $REPO/scripts/ground_truth/motif_gt.py --ref $REFGZ --preset $GT --outdir $W/gt
+        if [ ! -s $GTBED ]; then
+            if [[ "$GT" == motif:* ]]; then
+                IFS=: read -r _ MOTIF OFFS STR <<< "$GT"
+                python $REPO/scripts/ground_truth/motif_gt.py --ref $REFGZ --motif $MOTIF \
+                    --mod-base ${MOTIF:$OFFS:1} --mod-offset $OFFS --strand $STR --outdir $W/gt
+            else
+                python $REPO/scripts/ground_truth/motif_gt.py --ref $REFGZ --preset $GT --outdir $W/gt
+            fi
+        fi
     fi
 
     # (5) score: UniMeth freq output columns: chrom=0 pos=1 ... coverage=8 freq=9

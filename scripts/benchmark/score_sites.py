@@ -59,7 +59,10 @@ def main():
     gt = load_bed_positions(a.gt)
     cand = load_bed_positions(a.candidates) if a.candidates else None
 
-    ys, ps, n_skip = [], [], 0
+    # UniMeth's frequency table keeps + and - strand rows for the same position;
+    # the GT is per position, so collapse strands: coverage-weighted frequency.
+    acc = {}
+    n_skip = 0
     with opener(a.calls) as f:
         for line in f:
             if not line.strip() or line.startswith(("#", "chrom", "track")):
@@ -70,13 +73,14 @@ def main():
                 cov = float(c[a.cov_col]); freq = float(c[a.freq_col]) / a.freq_scale
             except (IndexError, ValueError):
                 n_skip += 1; continue
-            if cov < a.min_cov:
-                continue
             if cand is not None and key not in cand:
                 continue
-            ys.append(1 if key in gt else 0); ps.append(freq)
+            c0, f0 = acc.get(key, (0.0, 0.0))
+            acc[key] = (c0 + cov, f0 + cov * freq)
 
-    y, p = np.array(ys), np.array(ps)
+    keys = [k for k, (c, _) in acc.items() if c >= a.min_cov]
+    y = np.array([1 if k in gt else 0 for k in keys])
+    p = np.array([acc[k][1] / acc[k][0] for k in keys])
     if len(y) == 0 or y.sum() == 0 or y.sum() == len(y):
         print(f"{a.label}\tn={len(y)}\tpos={int(y.sum())}\tAUROC=nan (degenerate)", file=sys.stderr)
         sys.exit(1)
