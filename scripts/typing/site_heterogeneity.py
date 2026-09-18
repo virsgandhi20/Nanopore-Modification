@@ -62,7 +62,7 @@ def main():
     ap.add_argument("--gt", nargs="*", default=[])
     ap.add_argument("--min-cov", type=int, default=10)
     ap.add_argument("--call-frac", type=float, default=50.0,
-                    help="percent for a code to count as 'present' at a site")
+                    help="total modified percent for a site to count as modified")
     ap.add_argument("--mix-frac", type=float, default=20.0,
                     help="percent each of >=2 codes must reach to call a site mixed")
     ap.add_argument("--out", default=None)
@@ -70,7 +70,9 @@ def main():
 
     if a.bedmethyl:
         sites = read_bedmethyl(a.bedmethyl, a.min_cov)
-        called = {k: v for k, v in sites.items() if max(v.values()) >= a.call_frac}
+        # gate on TOTAL modified fraction (codes are exclusive per read), not the
+        # largest single code: a 45% 5mC + 40% 5hmC site is modified AND mixed
+        called = {k: v for k, v in sites.items() if sum(v.values()) >= a.call_frac}
         mixed = {k: v for k, v in called.items()
                  if sum(1 for x in v.values() if x >= a.mix_frac) >= 2}
         pairs = collections.Counter(
