@@ -1,0 +1,16 @@
+[ours_ecoli] dorado in BAM header: [('dorado', '1.4.0+ba44a013')]
+[ours_ecoli] medians over 40 reads
+    offset             8.0000
+    scale              0.2198
+    sm                93.6924
+    sd                23.5067
+    dac_mean         405.6162
+    dac_sd           100.1177
+    auto_mean         13.2695
+    auto_sd            4.2591
+    legacy_mean    11713.6122
+    legacy_sd       2353.4415
+    pA_mean           -0.1128
+    pA_sd              0.9362
+    device guess: MinION/GridION-like (scale 0.2198)
+[unimeth_demo] NOT DOWNLOADED: /fs/nexus-scratch/vgandhi/unimeth_bench/demo is missing demo.bam / subset_18.pod5 (P and Q will be skipped)

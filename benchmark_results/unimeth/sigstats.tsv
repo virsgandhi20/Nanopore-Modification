@@ -1,0 +1,2 @@
+label	n	offset	scale	sm	sd	dac_mean	dac_sd	auto_mean	auto_sd	legacy_mean	legacy_sd	pA_mean	pA_sd
+ours_ecoli	40	8.0000	0.2198	93.6924	23.5067	405.6162	100.1177	13.2695	4.2591	11713.6122	2353.4415	-0.1128	0.9362
