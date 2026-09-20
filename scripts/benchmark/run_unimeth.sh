@@ -79,11 +79,16 @@ for entry in ${DATASETS:?set DATASETS}; do
         CpG)  MODEL=$MODEL_CPG; CTX="--cpg 1" ;;                   # human/mouse CpG model
         *)    MODEL=$MODEL_5mC; CTX="--cpg 1 --chg 1 --chh 1" ;;   # all-context 5mC
     esac
+    # Throughput: UniMeth auto-picks 2 CPU feature workers and runs ~2 reads/s,
+    # so a whole bacterial dataset takes 12h+. Site-level AUROC does not need
+    # every read: the BAM is coordinate-sorted, so LIMIT=N takes the first N
+    # reads = a contiguous genomic region at FULL depth, and the scorer's
+    # coverage floor restricts scoring to that region. Set LIMIT (e.g. 15000).
     # v0.3.1 CLI (the README's `unimeth infer` is stale): separate `unimeth-infer`
     # command, m6A is an explicit switch, TSV path must end in .txt
     [ -s $W/calls.txt ] || unimeth-infer --pod5 $POD5 --bam $BAM --model $MODEL \
         --pore_type R10.4.1 --frequency 5khz $CTX --output_format tsv --out $W/calls.txt \
-        --batch_size ${BATCH:-256} ${LIMIT:+--limit $LIMIT}
+        --batch_size ${BATCH:-256} --num_workers ${NUM_WORKERS:-8} ${LIMIT:+--limit $LIMIT}
 
     # (3) per-site frequency
     [ -s $W/sites.tsv ] || python $UNIMETH_SRC/scripts/call_modification_frequency.py \
