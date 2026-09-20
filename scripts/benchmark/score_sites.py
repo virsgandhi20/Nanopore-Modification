@@ -50,6 +50,10 @@ def main():
     ap.add_argument("--pos-col", type=int, default=1)
     ap.add_argument("--cov-col", type=int, default=8)
     ap.add_argument("--freq-col", type=int, default=9)
+    ap.add_argument("--num-col", type=int, default=None,
+                    help="score = this column / coverage instead of freq-col (UniMeth: 5 = "
+                         "prob_1_sum, i.e. mean P(mod); keeps the ranking that a 0.5-thresholded "
+                         "call frequency throws away when the model is under-confident)")
     ap.add_argument("--freq-scale", type=float, default=1.0,
                     help="divide freq by this (100 for bedMethyl percent)")
     ap.add_argument("--label", default="")
@@ -70,7 +74,11 @@ def main():
             c = line.rstrip("\n").split("\t")
             try:
                 key = (c[a.chrom_col], int(c[a.pos_col]))
-                cov = float(c[a.cov_col]); freq = float(c[a.freq_col]) / a.freq_scale
+                cov = float(c[a.cov_col])
+                if a.num_col is not None:
+                    freq = float(c[a.num_col]) / cov if cov > 0 else 0.0
+                else:
+                    freq = float(c[a.freq_col]) / a.freq_scale
             except (IndexError, ValueError):
                 n_skip += 1; continue
             if cand is not None and key not in cand:
