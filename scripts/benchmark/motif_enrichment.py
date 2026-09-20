@@ -25,7 +25,7 @@ ref, name = {}, None
 with (gzip.open(a.ref, "rt") if a.ref.endswith(("gz", "bgz")) else open(a.ref)) as f:
     for line in f:
         if line.startswith(">"): name = line[1:].split()[0]; ref[name] = []
-        else: ref[name].append(line.strip().upper())
+        elif name is not None: ref[name].append(line.strip().upper())   # tolerate junk before the first header
 ref = {k: "".join(v) for k, v in ref.items()}
 comp = str.maketrans("ACGTN", "TGCAN")
 
