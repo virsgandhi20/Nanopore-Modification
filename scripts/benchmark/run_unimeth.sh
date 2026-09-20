@@ -22,7 +22,9 @@ DORADO=${DORADO:-/fs/cbcb-lab/storm/shared/rawhash2/basecallers/dorado-1.4.0-lin
 DORADO_MODEL=${DORADO_MODEL:-/fs/nexus-scratch/vgandhi/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0}
 SAM=${SAM:-/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools}
 UNIMETH_ENV=${UNIMETH_ENV:-/fs/nexus-scratch/vgandhi/envs/unimeth}
-UNIMETH_SRC=${UNIMETH_SRC:-/fs/nexus-scratch/vgandhi/Unimeth}   # git clone, for scripts/
+UNIMETH_SRC=${UNIMETH_SRC:-/fs/nexus-scratch/vgandhi/Unimeth}   # git clone: editable install + scripts/
+# NOTE: install UniMeth from this clone (pip install --no-deps -e), NOT from PyPI:
+# the PyPI wheel is v0.1.0 and ships without its configs/ directory.
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 MIN_COV=${MIN_COV:-10}
 # per-mod model files (names as shipped on the UniMeth Google Drive; override if different)
@@ -50,8 +52,13 @@ for entry in ${DATASETS:?set DATASETS}; do
     [ -s $REFFA.fai ] || $SAM faidx $REFFA
     POD5=$BENCH/bacteria/$S/pod5/$S.pod5
 
-    # (1) BAM with move tables. Prefer an existing mv-tagged BAM; else basecall.
-    BAM=$W/$S.moves.bam
+    # (1) BAM with move tables, ONE per sample (shared by the 6mA and 5mC rows).
+    # Prefer an existing mv-tagged BAM; else basecall. Adopt a BAM left by an
+    # earlier run that stored it under the per-mod workdir.
+    mkdir -p $OUT/bam; BAM=$OUT/bam/$S.moves.bam
+    for old in $OUT/$S.*/$S.moves.bam; do
+        [ -s "$old" ] && [ ! -s $BAM ] && { mv $old $BAM; mv $old.bai $BAM.bai 2>/dev/null || true; }
+    done
     if [ ! -s $BAM ]; then
         SRC=$(ls $BENCH/bacteria/$S/modbam/*.bam 2>/dev/null | head -1)
         if [ -n "$SRC" ] && $SAM view $SRC | head -500 | grep -q "mv:B"; then
@@ -59,23 +66,28 @@ for entry in ${DATASETS:?set DATASETS}; do
             [ -s $BAM.bai ] || $SAM index $BAM
         else
             echo "$S: basecalling with --emit-moves (GPU)"
-            $DORADO basecaller $DORADO_MODEL $POD5 --emit-moves --reference $REFFA > $W/$S.moves.unsorted.bam
-            $SAM sort -@ 8 -o $BAM $W/$S.moves.unsorted.bam && $SAM index $BAM && rm $W/$S.moves.unsorted.bam
+            $DORADO basecaller $DORADO_MODEL $POD5 --emit-moves --reference $REFFA > $OUT/bam/$S.unsorted.bam
+            $SAM sort -@ 8 -o $BAM $OUT/bam/$S.unsorted.bam && $SAM index $BAM && rm $OUT/bam/$S.unsorted.bam
         fi
     fi
 
-    # (2) unimeth infer -> per-read TSV
+    [ -s $BAM.bai ] || $SAM index $BAM
+
+    # (2) unimeth-infer -> per-read TSV
     case "$MOD" in
-        6mA)  MODEL=$MODEL_6mA; CTX="" ;;
+        6mA)  MODEL=$MODEL_6mA; CTX="--m6A 1" ;;
         CpG)  MODEL=$MODEL_CPG; CTX="--cpg 1" ;;                   # human/mouse CpG model
         *)    MODEL=$MODEL_5mC; CTX="--cpg 1 --chg 1 --chh 1" ;;   # all-context 5mC
     esac
-    [ -s $W/calls.tsv ] || unimeth infer --pod5 $POD5 --bam $BAM --model $MODEL \
-        --pore_type R10.4.1 --frequency 5khz $CTX --output_format tsv --out $W/calls.tsv --batch_size 256
+    # v0.3.1 CLI (the README's `unimeth infer` is stale): separate `unimeth-infer`
+    # command, m6A is an explicit switch, TSV path must end in .txt
+    [ -s $W/calls.txt ] || unimeth-infer --pod5 $POD5 --bam $BAM --model $MODEL \
+        --pore_type R10.4.1 --frequency 5khz $CTX --output_format tsv --out $W/calls.txt \
+        --batch_size ${BATCH:-256} ${LIMIT:+--limit $LIMIT}
 
     # (3) per-site frequency
     [ -s $W/sites.tsv ] || python $UNIMETH_SRC/scripts/call_modification_frequency.py \
-        -i $W/calls.tsv -o $W/sites.tsv --sort
+        -i $W/calls.txt -o $W/sites.tsv --sort
 
     # (4) ground truth: preset name -> generate from the reference; else a BED path
     # GT spec: a BED path | a motif_gt preset name | motif:<IUPAC>:<offset>:<+|both>
