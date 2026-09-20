@@ -9,3 +9,14 @@ D_d092_legacy_6mA: OK  (unimeth saw dorado=0.7.1)  meanP_gt=0.0009 meanP_bg=0.00
 E_d140_auto_5mC: OK  (unimeth saw dorado=1.4.0)  meanP_gt=0.3127 meanP_bg=0.3176 auroc=0.4763
 F_d092_auto_5mC: OK  (unimeth saw dorado=0.9.2)  meanP_gt=0.3122 meanP_bg=0.3168 auroc=0.4777
 diag finished Sat Sep 19 23:11:11 EDT 2026
+diag started Sun Sep 20 14:21:38 EDT 2026  host=cbcb29.umiacs.umd.edu  gpu=NVIDIA RTX 6000 Ada Generation
+GT ecoli_dam: 38248 sites
+GT ecoli_dcm: 24100 sites
+dorado 0.9.2 basecall: OK (2688 records)
+G_d140_pAnorm_6mA: OK  (unimeth saw dorado=1.4.0)  meanP_gt=0.8618 meanP_bg=0.0112 auroc=0.9854
+H_d140_pAnorm_5mC: OK  (unimeth saw dorado=1.4.0)  meanP_gt=0.2340 meanP_bg=0.0053 auroc=0.9791
+P_demo_readme_5mC: CpG calls=607190  P<0.1=0.387  P>0.9=0.400  P in 0.2-0.45=0.053
+Q_demo_pAnorm_5mC: CpG calls=607190  P<0.1=0.000  P>0.9=0.000  P in 0.2-0.45=0.477
+E (ours, blind, for comparison): CpG calls=613486  P<0.1=0.000  P>0.9=0.000  P in 0.2-0.45=0.971
+H (ours, pA norm): CpG calls=613486  P<0.1=0.994  P>0.9=0.000  P in 0.2-0.45=0.002
+diag finished Sun Sep 20 14:31:19 EDT 2026

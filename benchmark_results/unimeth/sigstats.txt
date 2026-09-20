@@ -14,3 +14,18 @@
     pA_sd              0.9362
     device guess: MinION/GridION-like (scale 0.2198)
 [unimeth_demo] NOT DOWNLOADED: /fs/nexus-scratch/vgandhi/unimeth_bench/demo is missing demo.bam / subset_18.pod5 (P and Q will be skipped)
+[unimeth_demo] dorado in BAM header: [('dorado', '0.7.1+80da5f5')]
+[unimeth_demo] medians over 40 reads
+    offset          -276.0000
+    scale              0.1871
+    sm              -776.8420
+    sd                 0.0080
+    dac_mean         760.6797
+    dac_sd           119.3116
+    auto_mean     192746.0723
+    auto_sd        14992.4018
+    legacy_mean       -0.1237
+    legacy_sd          0.9495
+    pA_mean       108818.6695
+    pA_sd           2804.6263
+    device guess: MinION/GridION-like (scale 0.1871)
