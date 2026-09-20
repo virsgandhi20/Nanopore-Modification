@@ -9,6 +9,15 @@
 #   E  dorado 1.4.0   auto                          5mC vs Dcm CCWGG (6mA-specific?)
 #   F  dorado 0.9.2   auto                          5mC vs Dcm CCWGG
 #
+# Round 2 (A-F were all blind). UniMeth's 5 kHz path normalizes the raw DAC
+# signal with sm/sd, which Dorado writes in pA, and never applies the pod5
+# calibration; only its 4 kHz path does. `--frequency` affects nothing else, so:
+#   G  dorado 1.4.0   --frequency 4khz (calibrated pA)   6mA
+#   H  dorado 1.4.0   --frequency 4khz (calibrated pA)   5mC
+#   P  UniMeth's own demo data, README flags            5mC  <- positive control
+#   Q  demo data, --frequency 4khz                       5mC
+# Run a subset without wiping earlier rows:  APPEND=1 CONFIGS="G H P Q"
+#
 # Built to survive unattended: NO `set -e`; every config is isolated, so one
 # failure cannot take the others down; every failure is recorded with its
 # reason in a status file that is tracked by git. If the 0.9.2 basecall fails,
@@ -75,7 +84,8 @@ if [ "${MODE:-}" = "preflight" ]; then
 fi
 
 # ---------------------------------------------------------------- real run
-rm -f $SUMMARY; : > $STATUS
+[ "${APPEND:-0}" = 1 ] || { rm -f $SUMMARY; : > $STATUS; }
+want() { [[ " ${CONFIGS:-A B C D E F} " == *" $1 "* ]]; }
 note() { echo "$*" | tee -a $STATUS; }
 note "diag started $(date)  host=$(hostname)  gpu=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)"
 
@@ -123,12 +133,38 @@ run() {  # label bam model ctxflags gtpreset [extra unimeth flags]
     else note "$L: summary FAILED :: $(tail -1 $OUT/$L.sum)"; fi
 }
 
-run A_d140_auto_6mA    $BAM140 $M6A "--m6A 1" ecoli_dam
-run B_d140_legacy_6mA  $BAM140 $M6A "--m6A 1" ecoli_dam --dorado_version 0.7.1
-run C_d092_auto_6mA    $BAM092 $M6A "--m6A 1" ecoli_dam
-run D_d092_legacy_6mA  $BAM092 $M6A "--m6A 1" ecoli_dam --dorado_version 0.7.1
-run E_d140_auto_5mC    $BAM140 $M5C "--cpg 1 --chg 1 --chh 1" ecoli_dcm
-run F_d092_auto_5mC    $BAM092 $M5C "--cpg 1 --chg 1 --chh 1" ecoli_dcm
+want A && run A_d140_auto_6mA    $BAM140 $M6A "--m6A 1" ecoli_dam
+want B && run B_d140_legacy_6mA  $BAM140 $M6A "--m6A 1" ecoli_dam --dorado_version 0.7.1
+want C && run C_d092_auto_6mA    $BAM092 $M6A "--m6A 1" ecoli_dam
+want D && run D_d092_legacy_6mA  $BAM092 $M6A "--m6A 1" ecoli_dam --dorado_version 0.7.1
+want E && run E_d140_auto_5mC    $BAM140 $M5C "--cpg 1 --chg 1 --chh 1" ecoli_dcm
+want F && run F_d092_auto_5mC    $BAM092 $M5C "--cpg 1 --chg 1 --chh 1" ecoli_dcm
+# later flags win in argparse, so this overrides run()'s --frequency 5khz
+want G && run G_d140_pAnorm_6mA  $BAM140 $M6A "--m6A 1" ecoli_dam --frequency 4khz
+want H && run H_d140_pAnorm_5mC  $BAM140 $M5C "--cpg 1 --chg 1 --chh 1" ecoli_dcm --frequency 4khz
+
+# Positive control on UniMeth's own demo data. No ground truth, so report the
+# SHAPE of P(mod) at CpG: a model that sees methylation is bimodal (most calls
+# <0.1 or >0.9); our blind runs put ~everything in 0.2-0.45.
+shape() { awk -v L="$1" '$7=="[CpG]"{n++; if($9<0.1)lo++; if($9>0.9)hi++; if($9>=0.2&&$9<=0.45)mid++}
+    END{if(n) printf "%s: CpG calls=%d  P<0.1=%.3f  P>0.9=%.3f  P in 0.2-0.45=%.3f\n", L, n, lo/n, hi/n, mid/n; else print L": no CpG calls"}' "$2"; }
+demo() {  # label [extra flags]
+    local L=$1; shift
+    echo "==================== $L  ($(date +%H:%M:%S)) ===================="
+    if [ ! -s $DEMO/subset_18.pod5 ] || [ ! -s $DEMO/demo.bam ]; then note "$L: SKIPPED (no demo data in $DEMO)"; return; fi
+    if [ ! -s $OUT/$L.txt ]; then
+        unimeth-infer --pod5 $DEMO/subset_18.pod5 --bam $DEMO/demo.bam --model $CKPT/$M5C --pore_type R10.4.1 --frequency 5khz \
+            --cpg 1 --chg 1 --chh 1 --output_format tsv --out $OUT/$L.txt --limit $LIMIT "$@" > $OUT/$L.runlog 2>&1
+        local rc=$?
+        if [ $rc -ne 0 ] || [ ! -s $OUT/$L.txt ]; then note "$L: FAILED rc=$rc :: $(grep -E 'Error|error' $OUT/$L.runlog | tail -1)"; rm -f $OUT/$L.txt; return; fi
+    fi
+    note "$(shape $L $OUT/$L.txt)"
+}
+DEMO=$BASE/demo
+want P && demo P_demo_readme_5mC
+want Q && demo Q_demo_pAnorm_5mC --frequency 4khz
+want P && [ -s $OUT/E_d140_auto_5mC.txt ] && note "$(shape 'E (ours, blind, for comparison)' $OUT/E_d140_auto_5mC.txt)"
+want H && [ -s $OUT/H_d140_pAnorm_5mC.txt ] && note "$(shape 'H (ours, pA norm)' $OUT/H_d140_pAnorm_5mC.txt)"
 
 note "diag finished $(date)"
 echo; echo "=== SUMMARY ==="; column -t $SUMMARY 2>/dev/null; echo; echo "=== STATUS ==="; cat $STATUS
