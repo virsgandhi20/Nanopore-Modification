@@ -86,8 +86,21 @@ for entry in ${DATASETS:?set DATASETS}; do
     # coverage floor restricts scoring to that region. Set LIMIT (e.g. 15000).
     # v0.3.1 CLI (the README's `unimeth infer` is stale): separate `unimeth-infer`
     # command, m6A is an explicit switch, TSV path must end in .txt
+    # SIGNAL NORMALIZATION (found 2026-09-20, see unimeth_diag.sh / sigstats.txt):
+    # with --frequency 5khz UniMeth normalizes the RAW DAC signal with the BAM's
+    # sm/sd tags. Dorado > 0.7.1 writes those in pA (v5 models: the constants
+    # 93.69 / 23.51), and UniMeth never applies the pod5 calibration, so the
+    # network sees mean 13 / sd 4 instead of mean 0 / sd 1 and is blind (per-read
+    # AUROC 0.48 at E. coli Dam sites). `--frequency 4khz` selects the code path
+    # that does convert DAC -> pA (input mean -0.11 / sd 0.94, matching UniMeth's
+    # own demo data at -0.12 / 0.95) and changes nothing else in the code; with
+    # it the same reads give per-read AUROC 0.985. NORM=raw restores the old path.
+    NORM=${NORM:-pa}
+    if [ "$NORM" = pa ]; then FREQ=4khz; else FREQ=5khz; fi
+    # never reuse calls made under a different normalization (the blind run left 7 GB)
+    if [ "$(cat $W/.norm 2>/dev/null || true)" != "$NORM" ]; then rm -f $W/calls.txt $W/sites.tsv; echo "$NORM" > $W/.norm; fi
     [ -s $W/calls.txt ] || unimeth-infer --pod5 $POD5 --bam $BAM --model $MODEL \
-        --pore_type R10.4.1 --frequency 5khz $CTX --output_format tsv --out $W/calls.txt \
+        --pore_type R10.4.1 --frequency $FREQ $CTX --output_format tsv --out $W/calls.txt \
         --batch_size ${BATCH:-256} --num_workers ${NUM_WORKERS:-8} ${LIMIT:+--limit $LIMIT}
 
     # (3) per-site frequency
@@ -109,6 +122,13 @@ for entry in ${DATASETS:?set DATASETS}; do
             fi
         fi
     fi
+
+    # (4b) blindness guard: per-read P(mod) at GT vs background on the first 3M
+    # calls. A row whose per_read_auroc is ~0.5 here must not go into the table.
+    head -3000000 $W/calls.txt > $W/.sanity_calls.txt
+    python $REPO/scripts/benchmark/diag_summary.py --calls $W/.sanity_calls.txt --gt $GTBED \
+        --label "$S/$MOD" --out $OUT/table1_sanity.tsv || echo "sanity check failed (non-fatal)"
+    rm -f $W/.sanity_calls.txt
 
     # (5) score: UniMeth freq output columns: chrom=0 pos=1 ... coverage=8 freq=9
     python $REPO/scripts/benchmark/score_sites.py --calls $W/sites.tsv --gt $GTBED \
