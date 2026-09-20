@@ -49,8 +49,11 @@ if [ "${MODE:-}" = "preflight" ]; then
     chk "dorado-1.4.0 BAM exists"           "[ -s $BAM140 ]"
     chk "  ...and carries move tables"      "[ \$($SAM view $BAM140 | head -200 | grep -c 'mv:B') -gt 100 ]"
     chk "dorado 0.9.2 binary runs"          "$DOR092 --version"
-    chk "  ...and supports --max-reads"     "$DOR092 basecaller --help 2>&1 | grep -q -- '--max-reads'"
-    chk "  ...and supports --emit-moves"    "$DOR092 basecaller --help 2>&1 | grep -q -- '--emit-moves'"
+    # capture the help text FIRST: piping into `grep -q` under pipefail reports a
+    # failure exactly when the flag is found (grep exits early, dorado gets SIGPIPE)
+    DHELP=$($DOR092 basecaller --help 2>&1 || true)
+    chk "  ...and supports --max-reads"     "grep -q -- '--max-reads' <<< \"\$DHELP\""
+    chk "  ...and supports --emit-moves"    "grep -q -- '--emit-moves' <<< \"\$DHELP\""
     chk "dorado sup@v5.0.0 model present"   "[ -d $DMODEL ]"
     chk "UniMeth 6mA checkpoint"            "[ -s $CKPT/$M6A ]"
     chk "UniMeth 5mC checkpoint"            "[ -s $CKPT/$M5C ]"
