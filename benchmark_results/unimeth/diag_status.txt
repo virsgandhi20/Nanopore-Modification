@@ -1,0 +1,11 @@
+diag started Sat Sep 19 23:02:32 EDT 2026  host=cbcb28.umiacs.umd.edu  gpu=NVIDIA RTX 6000 Ada Generation
+GT ecoli_dam: 38248 sites
+GT ecoli_dcm: 24100 sites
+dorado 0.9.2 basecall: OK (2688 records)
+A_d140_auto_6mA: OK  (unimeth saw dorado=?)  meanP_gt=0.0009 meanP_bg=0.0010 auroc=0.4779
+B_d140_legacy_6mA: OK  (unimeth saw dorado=0.7.1)  meanP_gt=0.0009 meanP_bg=0.0009 auroc=0.4732
+C_d092_auto_6mA: OK  (unimeth saw dorado=0.9.2)  meanP_gt=0.0008 meanP_bg=0.0009 auroc=0.4794
+D_d092_legacy_6mA: OK  (unimeth saw dorado=0.7.1)  meanP_gt=0.0009 meanP_bg=0.0009 auroc=0.4726
+E_d140_auto_5mC: OK  (unimeth saw dorado=1.4.0)  meanP_gt=0.3127 meanP_bg=0.3176 auroc=0.4763
+F_d092_auto_5mC: OK  (unimeth saw dorado=0.9.2)  meanP_gt=0.3122 meanP_bg=0.3168 auroc=0.4777
+diag finished Sat Sep 19 23:11:11 EDT 2026
