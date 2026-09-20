@@ -1,0 +1,106 @@
+################ 1. runlog A, everything except progress bars
+grep: /fs/nexus-scratch/vgandhi/unimeth_bench/diag/A_d140_auto_6mA.runlog: No such file or directory
+
+################ 2. load/key/warning lines across all runlogs
+      5   Unmapped       : skip
+      5   Supplementary  : skip
+
+################ 3. is P(mod) a constant? quantiles
+6mA (A):
+  q0.01=0.000123  q0.5=0.000519  q0.9=0.001927  q0.99=0.005911  q0.999=0.020332  q0.9999=0.067547  max=0.515620  n=1650830
+5mC (E):
+  q0.01=0.212069  q0.5=0.307358  q0.9=0.392337  q0.99=0.531209  q0.999=0.592667  q0.9999=0.651355  max=0.705785  n=1814147
+
+################ 4. does the 5mC output depend on SEQUENCE context only?
+  [CpG]    n=549299   meanP=0.3171
+  [CHG]    n=317584   meanP=0.3152
+  [CHH]    n=947264   meanP=0.3186
+   (different constants per context + no GT separation = model sees tokens, not signal)
+
+################ 5. same read, same position: A (auto norm) vs B (legacy norm)
+  mean |P_auto - P_legacy| = 0.000725   max = 0.3475   over 200000 calls
+   (~0 means the signal is NOT influencing the output)
+
+################ 6. do BAM read ids exist in the pod5?
+  292 of 292 BAM read ids found in the pod5 (50,418 reads in pod5)
+  tags on first BAM record:
+    ns:i:251026
+    ts:i:586
+    st:Z:2023-06-07T14:32:14.865000+00:00
+    sm:f:93.6924
+    sd:f:23.5067
+    mv:B:c,6,1,1,1,0,0,0,1,1,0,0,1,0,1,1,0,0
+
+################ 7. checkpoint structure
+  type: OrderedDict
+  top-level keys: ['processor.process.0.weight', 'processor.process.0.bias', 'processor.process.1.weight', 'processor.process.1.bias', 'processor.process.1.running_mean', 'processor.process.1.running_var', 'processor.process.1.num_batches_tracked', 'processor.process.3.weight', 'processor.process.3.bias', 'processor.process.4.weight', 'processor.process.4.bias', 'processor.process.4.running_mean'] ... total 530
+  tensors: 530
+    processor.process.0.weight (192, 1, 3)
+    processor.process.0.bias (192,)
+    processor.process.1.weight (192,)
+    processor.process.1.bias (192,)
+    processor.process.1.running_mean (192,)
+    processor.process.1.running_var (192,)
+    ...
+    encoder_decoder.model.decoder.layernorm_embedding.weight (384,)
+    encoder_decoder.model.decoder.layernorm_embedding.bias (384,)
+    encoder_decoder.lm_head.weight (17, 384)
+    pos_encoder.encoding (260, 384)
+
+################ 8. demo / test data shipped with UniMeth (positive control?)
+/fs/nexus-scratch/vgandhi/Unimeth/tests
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_args_config.py
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_bam_aggregation.py
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_bam_finalize.py
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_model_config.py
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_patcher.py
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_signal_paths.py
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_slow5_reader.py
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_tsv_writer_gzip.py
+/fs/nexus-scratch/vgandhi/Unimeth/tests/test_unaligned_bam.py
+87:- **Model**: Download `unimeth_r10.4.1_5kHz_5mC.pt` from [Google Drive](https://drive.google.com/drive/folders/1f8bWVFmbPxL6WqukOUi_BufCEvpOHaxR) to the `checkpoints` folder
+88:- **Sample Data**: Download the demo dataset using one of the following methods:
+91:mkdir demo
+93:gdown --folder https://drive.google.com/drive/folders/1Gu7hgOQbHSUULG1MXjdE_qJ3na-6AdLi -O demo/
+95:The demo dataset includes:
+97:- `demo.bam` - aligned reads
+98:- `subset_18.pod5` - raw signal data
+102:Use `dorado` to basecall and align the nanopore reads (there is already a `demo.bam` file in the demo folder, this step is optional):
+108:/path/to/subset_18.pod5 > demo.bam
+119:--pod5 demo/subset_18.pod5 \
+120:--bam demo/demo.bam \
+134:--pod5 demo/subset_18.pod5 \
+135:--bam demo/demo.bam \
+178:Download models from the [Google Drive](https://drive.google.com/drive/folders/1f8bWVFmbPxL6WqukOUi_BufCEvpOHaxR) page.
+
+################ 9. flags we have not used
+                     [--model_type {default,distilled}]
+                     [--num_workers NUM_WORKERS]
+                     [--bam_mode {auto,aligned,unaligned}] [--mapq MAPQ_THRES]
+                     [--identity IDENTITY_THRES] [--include_supplementary]
+                     [--skip_unmapped {yes,no}] [--keep_mv]
+                     [--signal_index SIGNAL_INDEX] [--run_name RUN_NAME]
+
+UniMeth Inference - Predict DNA methylation from nanopore data
+
+--
+  --model_type {default,distilled}
+                        Model architecture: default (100M params) or distilled
+                        (62M params, faster)
+  --num_workers NUM_WORKERS
+--
+  --bam_mode {auto,aligned,unaligned}
+                        BAM interpretation: auto-detect, aligned, or unaligned
+                        (default: auto)
+  --mapq MAPQ_THRES     Minimum mapping quality in aligned BAM mode (default:
+--
+  --keep_mv, --keep-mv  Keep mv tag in output modBAM (default: remove mv tag)
+  --signal_index SIGNAL_INDEX
+                        Signal route index path (default: .unimeth-signal-
+                        index.sqlite in a multi-file signal directory)
+  --run_name RUN_NAME   Run name for logging and checkpoint naming
+--
+      --model_type distilled \
+      --cpg 1 --batch_size 512 \
+      --pore_type R10.4.1 --frequency 5khz --dorado_version 0.7.1
+
