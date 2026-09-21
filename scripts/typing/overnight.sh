@@ -31,6 +31,7 @@ N=$RUN/npz; S=$RUN/sites
 # another queue (use a different RUN so the two copies never share a file), e.g.
 #   RUN=$ME/typing_overnight_scav SBASE="--account=scavenger --partition=scavenger --qos=scavenger --requeue"
 SBASE=${SBASE:-"--account=cbcb --partition=cbcb --qos=high --exclude=cbcb25"}
+GRES=${GRES:-gpu:1}          # e.g. gpu:rtxa5000:1 to stay off GPUs too old for Dorado
 
 # ------------------------------------------------------------------ samples
 # name | bam | pod5 | ref | sites (group=bed,...) | label map | mod-base for unstranded beds | reads per site
@@ -173,7 +174,7 @@ submit)
             body+="; if [ ! -s $B ]; then $DORADO basecaller $DMODEL $POD --emit-moves --reference $REF > $RUN/bam/$NM.unsorted.bam 2> $RUN/logs/dorado_$NM.err && $SAM sort -@ 8 -o $B $RUN/bam/$NM.unsorted.bam && $SAM index $B; rm -f $RUN/bam/$NM.unsorted.bam; fi"
             body+="; if [ -s $B ]; then echo \"$NM basecall OK: \$($SAM flagstat $B | grep -m1 'mapped (')\" >> $RUN/status/basecall_$tag.txt; else ok=0; echo \"$NM basecall FAILED: \$(tail -2 $RUN/logs/dorado_$NM.err | tr '\\n' ' ')\" >> $RUN/status/basecall_$tag.txt; fi"
         done
-        sub --gres=gpu:1 --cpus-per-task=8 --mem=48G --time=03:00:00 --job-name=ty_bc_$tag --output=$RUN/logs/bc_${tag}_%j.log --wrap="$body; [ \$ok = 1 ]"
+        sub --gres=$GRES --cpus-per-task=8 --mem=48G --time=03:00:00 --job-name=ty_bc_$tag --output=$RUN/logs/bc_${tag}_%j.log --wrap="$body; [ \$ok = 1 ]"
     }
     J_DM=$(basecall ecoli_dm "Ecoli_DM_5kHz:$BENCH/bacteria/Ecoli_DM_5kHz/pod5:$UB/ref/ecoli.fa")
     J_WGA=$(basecall hp_wga "HP26695_WGA_5kHz:$BENCH/bacteria/HP26695_WGA_5kHz/pod5:$UB/ref/hpylori_26695.fa")
@@ -193,7 +194,7 @@ submit)
         [[ "$ROW" == *syn_* ]] && DEPS+=$EX_SYN
         [[ "$ROW" == *ecoli_* || "$ROW" == *hp_w* ]] && DEPS+=$EX_BACT
         [[ "$ROW" == *anabaena* ]] && DEPS+=$EX_NOVEL
-        J=$(sub ${DEPS:+--dependency=afterany$DEPS} --gres=gpu:1 --cpus-per-task=6 --mem=64G --time=03:00:00 --job-name=ty_$NAME --output=$RUN/logs/tr_${NAME}_%j.log --wrap="$PRE; $(train_cmd "$ROW" $RUN/runs/$NAME)")
+        J=$(sub ${DEPS:+--dependency=afterany$DEPS} --gres=$GRES --cpus-per-task=6 --mem=64G --time=03:00:00 --job-name=ty_$NAME --output=$RUN/logs/tr_${NAME}_%j.log --wrap="$PRE; $(train_cmd "$ROW" $RUN/runs/$NAME)")
         echo -e "train\t$NAME\t$J" >> $RUN/jobs.tsv
     done < <(experiments)
     echo "submitted $(grep -c . $RUN/jobs.tsv) jobs ($(awk -F'\t' '$3==""' $RUN/jobs.tsv | wc -l) failed to submit):"; column -t -s$'\t' $RUN/jobs.tsv
