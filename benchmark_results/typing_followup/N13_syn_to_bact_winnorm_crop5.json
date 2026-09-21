@@ -1,0 +1,868 @@
+{
+ "name": "N13_syn_to_bact_winnorm_crop5",
+ "note": "same, 11-base window, signal only",
+ "args": {
+  "name": "N13_syn_to_bact_winnorm_crop5",
+  "out": "/fs/nexus-scratch/vgandhi/typing_followup/runs/N13_syn_to_bact_winnorm_crop5",
+  "train": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_control_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5mC_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5hmC_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_6mA_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_control_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5mC_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5hmC_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_6mA_rep2.npz",
+  "eval": "ecoli=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_wt.npz+/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_dm.npz+/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_msssi.npz,hp=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/hp_wt.npz+/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/hp_wga.npz,anabaena=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/anabaena.npz,tdent=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/tdent.npz,j99=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/j99.npz",
+  "classes": "none,5mC,5hmC,6mA",
+  "inputs": "sig,dwell",
+  "groups": "",
+  "train_samples": "",
+  "epochs": 8,
+  "batch": 512,
+  "lr": 0.002,
+  "max_per_class": 150000,
+  "merge": "",
+  "renorm": "window",
+  "crop": 5,
+  "seed": 0,
+  "note": "same, 11-base window, signal only"
+ },
+ "sets": {
+  "test": {
+   "n_windows": 165600,
+   "labels": {
+    "none": 68000,
+    "5mC": 29600,
+    "5hmC": 29600,
+    "6mA": 38400
+   },
+   "read_acc": 0.4897,
+   "read_macro_f1": 0.4728,
+   "read_recall_by_class": {
+    "none": 0.5129,
+    "5mC": 0.4828,
+    "5hmC": 0.3848,
+    "6mA": 0.5348
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      34880,
+      8522,
+      8196,
+      16402
+     ],
+     [
+      6715,
+      14290,
+      5604,
+      2991
+     ],
+     [
+      6447,
+      9555,
+      11389,
+      2209
+     ],
+     [
+      12517,
+      2684,
+      2663,
+      20536
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.7004,
+    "5mC": 0.7757,
+    "5hmC": 0.7683,
+    "6mA": 0.7883
+   },
+   "read_auroc_mod_vs_none": 0.7004,
+   "site_n": 414,
+   "site_acc": 0.587,
+   "site_macro_f1": 0.5667,
+   "site_auroc_mod_vs_none": 0.8023,
+   "stoichiometry": {
+    "sites": 85,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.551,
+     "0.1": 0.579,
+     "0.25": 0.624,
+     "0.5": 0.657,
+     "0.75": 0.733,
+     "0.9": 0.746,
+     "1.0": 0.778
+    },
+    "mae": 0.315,
+    "pearson_r": 0.3429
+   }
+  },
+  "test/syn_5hmC_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "5hmC": 14800
+   },
+   "read_acc": 0.3947,
+   "read_macro_f1": 0.566,
+   "read_recall_by_class": {
+    "5hmC": 0.3947
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      3073,
+      4772,
+      5841,
+      1114
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5hmC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.4595,
+   "site_macro_f1": 0.6296,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5hmC_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "5hmC": 14800
+   },
+   "read_acc": 0.3748,
+   "read_macro_f1": 0.5452,
+   "read_recall_by_class": {
+    "5hmC": 0.3748
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      3375,
+      4784,
+      5547,
+      1094
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5hmC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.3784,
+   "site_macro_f1": 0.549,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5mC_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "5mC": 14800
+   },
+   "read_acc": 0.4803,
+   "read_macro_f1": 0.649,
+   "read_recall_by_class": {
+    "5mC": 0.4803
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      3358,
+      7109,
+      2826,
+      1507
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.5946,
+   "site_macro_f1": 0.7458,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5mC_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "5mC": 14800
+   },
+   "read_acc": 0.4851,
+   "read_macro_f1": 0.6533,
+   "read_recall_by_class": {
+    "5mC": 0.4851
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      3357,
+      7180,
+      2779,
+      1484
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.6216,
+   "site_macro_f1": 0.7667,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_6mA_rep1": {
+   "n_windows": 19200,
+   "labels": {
+    "6mA": 19200
+   },
+   "read_acc": 0.5342,
+   "read_macro_f1": 0.6964,
+   "read_recall_by_class": {
+    "6mA": 0.5342
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      6242,
+      1350,
+      1352,
+      10256
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "6mA": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 48,
+   "site_acc": 0.625,
+   "site_macro_f1": 0.7692,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_6mA_rep2": {
+   "n_windows": 19200,
+   "labels": {
+    "6mA": 19200
+   },
+   "read_acc": 0.5354,
+   "read_macro_f1": 0.6974,
+   "read_recall_by_class": {
+    "6mA": 0.5354
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      6275,
+      1334,
+      1311,
+      10280
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "6mA": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 48,
+   "site_acc": 0.6458,
+   "site_macro_f1": 0.7848,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_control_rep1": {
+   "n_windows": 34000,
+   "labels": {
+    "none": 34000
+   },
+   "read_acc": 0.5066,
+   "read_macro_f1": 0.6725,
+   "read_recall_by_class": {
+    "none": 0.5066
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      17226,
+      4370,
+      4057,
+      8347
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 85,
+   "site_acc": 0.6118,
+   "site_macro_f1": 0.7591,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_control_rep2": {
+   "n_windows": 34000,
+   "labels": {
+    "none": 34000
+   },
+   "read_acc": 0.5192,
+   "read_macro_f1": 0.6835,
+   "read_recall_by_class": {
+    "none": 0.5192
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      17654,
+      4153,
+      4138,
+      8055
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 85,
+   "site_acc": 0.6353,
+   "site_macro_f1": 0.777,
+   "site_auroc_mod_vs_none": null
+  },
+  "ecoli": {
+   "n_windows": 1047624,
+   "labels": {
+    "none": 761496,
+    "5mC": 190716,
+    "6mA": 95412
+   },
+   "read_acc": 0.4601,
+   "read_macro_f1": 0.4228,
+   "read_recall_by_class": {
+    "none": 0.4658,
+    "5mC": 0.3784,
+    "6mA": 0.5777
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      354736,
+      124772,
+      106780,
+      175208
+     ],
+     [
+      48979,
+      72170,
+      40946,
+      28621
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      26091,
+      11269,
+      2935,
+      55117
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.6549,
+    "5mC": 0.699,
+    "6mA": 0.7694
+   },
+   "read_auroc_mod_vs_none": 0.6549,
+   "site_n": 87250,
+   "site_acc": 0.5608,
+   "site_macro_f1": 0.5123,
+   "site_auroc_mod_vs_none": 0.7311,
+   "stoichiometry": {
+    "sites": 16057,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.653,
+     "0.1": 0.669,
+     "0.25": 0.686,
+     "0.5": 0.727,
+     "0.75": 0.762,
+     "0.9": 0.779,
+     "1.0": 0.8
+    },
+    "mae": 0.3569,
+    "pearson_r": 0.2197
+   }
+  },
+  "hp": {
+   "n_windows": 901188,
+   "labels": {
+    "6mA": 95990,
+    "5mC": 95994,
+    "none": 641968,
+    "4mC": 67236
+   },
+   "read_acc": 0.4544,
+   "read_macro_f1": 0.3907,
+   "read_recall_by_class": {
+    "none": 0.4692,
+    "5mC": 0.3555,
+    "6mA": 0.4543
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      301212,
+      97450,
+      86051,
+      157255
+     ],
+     [
+      21415,
+      34127,
+      29042,
+      11410
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      29682,
+      13259,
+      9441,
+      43608
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.6628,
+    "5mC": 0.702,
+    "6mA": 0.6764
+   },
+   "read_auroc_mod_vs_none": 0.6628,
+   "site_n": 69468,
+   "site_acc": 0.55,
+   "site_macro_f1": 0.4689,
+   "site_auroc_mod_vs_none": 0.7364,
+   "stoichiometry": {
+    "sites": 15975,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.595,
+     "0.1": 0.624,
+     "0.25": 0.648,
+     "0.5": 0.702,
+     "0.75": 0.755,
+     "0.9": 0.776,
+     "1.0": 0.805
+    },
+    "mae": 0.3293,
+    "pearson_r": 0.3069
+   },
+   "openset": {
+    "unknown_labels": {
+     "4mC": 67236
+    },
+    "auroc_unknown_by_low_confidence": 0.5231,
+    "unknown_called_as": {
+     "none": 0.3923,
+     "5mC": 0.1952,
+     "5hmC": 0.1532,
+     "6mA": 0.2593
+    },
+    "mean_confidence_known": 0.6475,
+    "mean_confidence_unknown": 0.634,
+    "auroc_unknown_vs_known_modified": 0.5351
+   }
+  },
+  "anabaena": {
+   "n_windows": 191597,
+   "labels": {
+    "none": 95743,
+    "6mA": 95854
+   },
+   "read_acc": 0.5021,
+   "read_macro_f1": 0.563,
+   "read_recall_by_class": {
+    "none": 0.4446,
+    "6mA": 0.5595
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      42569,
+      12758,
+      9591,
+      30825
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      21960,
+      17455,
+      2807,
+      53632
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.6728,
+    "6mA": 0.6604
+   },
+   "read_auroc_mod_vs_none": 0.6728,
+   "site_n": 15979,
+   "site_acc": 0.6,
+   "site_macro_f1": 0.6439,
+   "site_auroc_mod_vs_none": 0.7339
+  },
+  "tdent": {
+   "n_windows": 192000,
+   "labels": {
+    "6mA": 96000,
+    "none": 96000
+   },
+   "read_acc": 0.5296,
+   "read_macro_f1": 0.5806,
+   "read_recall_by_class": {
+    "none": 0.4553,
+    "6mA": 0.6039
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      43712,
+      12273,
+      9357,
+      30658
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      24216,
+      8961,
+      4852,
+      57971
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.634,
+    "6mA": 0.6892
+   },
+   "read_auroc_mod_vs_none": 0.634,
+   "site_n": 16000,
+   "site_acc": 0.6398,
+   "site_macro_f1": 0.6706,
+   "site_auroc_mod_vs_none": 0.7136
+  },
+  "j99": {
+   "n_windows": 192000,
+   "labels": {
+    "6mA": 96000,
+    "none": 96000
+   },
+   "read_acc": 0.4408,
+   "read_macro_f1": 0.4999,
+   "read_recall_by_class": {
+    "none": 0.4514,
+    "6mA": 0.4301
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA"
+    ],
+    "matrix": [
+     [
+      43336,
+      12614,
+      10051,
+      29999
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      31923,
+      13157,
+      9630,
+      41290
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.5798,
+    "6mA": 0.5649
+   },
+   "read_auroc_mod_vs_none": 0.5798,
+   "site_n": 16000,
+   "site_acc": 0.5125,
+   "site_macro_f1": 0.5583,
+   "site_auroc_mod_vs_none": 0.6244
+  }
+ },
+ "warnings": [],
+ "train_counts": {
+  "none": 150000,
+  "5mC": 144800,
+  "5hmC": 144800,
+  "6mA": 128800
+ },
+ "best_val_macro_f1": 0.4778,
+ "status": "OK",
+ "minutes": 2.1
+}

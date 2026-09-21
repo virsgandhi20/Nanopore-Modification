@@ -1,0 +1,233 @@
+{
+ "name": "M08_ecoli_motifonly_signal",
+ "note": "same without sequence input",
+ "args": {
+  "name": "M08_ecoli_motifonly_signal",
+  "out": "/fs/nexus-scratch/vgandhi/typing_followup/runs/M08_ecoli_motifonly_signal",
+  "train": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_wt.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_dm.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_msssi.npz",
+  "eval": "",
+  "classes": "none,6mA,5mC",
+  "inputs": "sig,dwell",
+  "groups": "dam,dcm,cpg",
+  "train_samples": "",
+  "epochs": 8,
+  "batch": 512,
+  "lr": 0.002,
+  "max_per_class": 150000,
+  "merge": "",
+  "renorm": "none",
+  "crop": 0,
+  "seed": 0,
+  "note": "same without sequence input"
+ },
+ "sets": {
+  "test": {
+   "n_windows": 101988,
+   "labels": {
+    "none": 57984,
+    "5mC": 29052,
+    "6mA": 14952
+   },
+   "read_acc": 0.8153,
+   "read_macro_f1": 0.7949,
+   "read_recall_by_class": {
+    "none": 0.7736,
+    "6mA": 0.8599,
+    "5mC": 0.8755
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      44857,
+      8385,
+      4742
+     ],
+     [
+      1737,
+      12857,
+      358
+     ],
+     [
+      2877,
+      741,
+      25434
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9269,
+    "6mA": 0.9537,
+    "5mC": 0.9667
+   },
+   "read_auroc_mod_vs_none": 0.9269,
+   "site_n": 8499,
+   "site_acc": 0.9213,
+   "site_macro_f1": 0.9063,
+   "site_auroc_mod_vs_none": 0.9894,
+   "stoichiometry": {
+    "sites": 2490,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.274,
+     "0.1": 0.352,
+     "0.25": 0.431,
+     "0.5": 0.581,
+     "0.75": 0.741,
+     "0.9": 0.817,
+     "1.0": 0.898
+    },
+    "mae": 0.168,
+    "pearson_r": 0.7641
+   }
+  },
+  "test/ecoli_dm": {
+   "n_windows": 43836,
+   "labels": {
+    "none": 43836
+   },
+   "read_acc": 0.7729,
+   "read_macro_f1": 0.8719,
+   "read_recall_by_class": {
+    "none": 0.7729
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      33879,
+      6889,
+      3068
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 3653,
+   "site_acc": 0.8776,
+   "site_macro_f1": 0.9348,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_msssi": {
+   "n_windows": 14292,
+   "labels": {
+    "5mC": 14292
+   },
+   "read_acc": 0.8745,
+   "read_macro_f1": 0.933,
+   "read_recall_by_class": {
+    "5mC": 0.8745
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1350,
+      444,
+      12498
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 1191,
+   "site_acc": 0.9513,
+   "site_macro_f1": 0.975,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_wt": {
+   "n_windows": 43860,
+   "labels": {
+    "none": 14148,
+    "5mC": 14760,
+    "6mA": 14952
+   },
+   "read_acc": 0.8384,
+   "read_macro_f1": 0.8374,
+   "read_recall_by_class": {
+    "none": 0.7759,
+    "6mA": 0.8599,
+    "5mC": 0.8764
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      10978,
+      1496,
+      1674
+     ],
+     [
+      1737,
+      12857,
+      358
+     ],
+     [
+      1527,
+      297,
+      12936
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9189,
+    "6mA": 0.9726,
+    "5mC": 0.9684
+   },
+   "read_auroc_mod_vs_none": 0.9189,
+   "site_n": 3655,
+   "site_acc": 0.9551,
+   "site_macro_f1": 0.9544,
+   "site_auroc_mod_vs_none": 0.9882
+  }
+ },
+ "warnings": [],
+ "train_counts": {
+  "none": 150000,
+  "6mA": 66240,
+  "5mC": 132312
+ },
+ "best_val_macro_f1": 0.7952,
+ "status": "OK",
+ "minutes": 1.6
+}

@@ -1,0 +1,356 @@
+{
+ "name": "E04_syn_5mC_vs_5hmC_s2",
+ "note": "seed replicate of E04",
+ "args": {
+  "name": "E04_syn_5mC_vs_5hmC_s2",
+  "out": "/fs/nexus-scratch/vgandhi/typing_followup/runs/E04_syn_5mC_vs_5hmC_s2",
+  "train": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_control_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5mC_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5hmC_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_6mA_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_control_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5mC_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5hmC_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_6mA_rep2.npz",
+  "eval": "",
+  "classes": "none,5mC,5hmC",
+  "inputs": "sig,dwell,seq",
+  "groups": "synC",
+  "train_samples": "",
+  "epochs": 8,
+  "batch": 512,
+  "lr": 0.002,
+  "max_per_class": 150000,
+  "merge": "",
+  "renorm": "none",
+  "crop": 0,
+  "seed": 2,
+  "note": "seed replicate of E04"
+ },
+ "sets": {
+  "test": {
+   "n_windows": 88800,
+   "labels": {
+    "none": 29600,
+    "5mC": 29600,
+    "5hmC": 29600
+   },
+   "read_acc": 0.7038,
+   "read_macro_f1": 0.7027,
+   "read_recall_by_class": {
+    "none": 0.7956,
+    "5mC": 0.7043,
+    "5hmC": 0.6116
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC"
+    ],
+    "matrix": [
+     [
+      23550,
+      4105,
+      1945
+     ],
+     [
+      4939,
+      20848,
+      3813
+     ],
+     [
+      3834,
+      7664,
+      18102
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9051,
+    "5mC": 0.8363,
+    "5hmC": 0.8476
+   },
+   "read_auroc_mod_vs_none": 0.9051,
+   "site_n": 222,
+   "site_acc": 0.8153,
+   "site_macro_f1": 0.8151,
+   "site_auroc_mod_vs_none": 0.9546,
+   "stoichiometry": {
+    "sites": 37,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.216,
+     "0.1": 0.324,
+     "0.25": 0.385,
+     "0.5": 0.566,
+     "0.75": 0.684,
+     "0.9": 0.767,
+     "1.0": 0.872
+    },
+    "mae": 0.1693,
+    "pearson_r": 0.7101
+   }
+  },
+  "test/syn_5hmC_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "5hmC": 14800
+   },
+   "read_acc": 0.6257,
+   "read_macro_f1": 0.7697,
+   "read_recall_by_class": {
+    "5hmC": 0.6257
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1772,
+      3768,
+      9260
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5hmC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.7027,
+   "site_macro_f1": 0.8254,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5hmC_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "5hmC": 14800
+   },
+   "read_acc": 0.5974,
+   "read_macro_f1": 0.748,
+   "read_recall_by_class": {
+    "5hmC": 0.5974
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      2062,
+      3896,
+      8842
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5hmC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.6486,
+   "site_macro_f1": 0.7869,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5mC_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "5mC": 14800
+   },
+   "read_acc": 0.7017,
+   "read_macro_f1": 0.8247,
+   "read_recall_by_class": {
+    "5mC": 0.7017
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      2491,
+      10385,
+      1924
+     ],
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.8919,
+   "site_macro_f1": 0.9429,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5mC_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "5mC": 14800
+   },
+   "read_acc": 0.707,
+   "read_macro_f1": 0.8283,
+   "read_recall_by_class": {
+    "5mC": 0.707
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      2447,
+      10463,
+      1890
+     ],
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.8919,
+   "site_macro_f1": 0.9429,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_control_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "none": 14800
+   },
+   "read_acc": 0.7961,
+   "read_macro_f1": 0.8865,
+   "read_recall_by_class": {
+    "none": 0.7961
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC"
+    ],
+    "matrix": [
+     [
+      11782,
+      2095,
+      923
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.8649,
+   "site_macro_f1": 0.9275,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_control_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "none": 14800
+   },
+   "read_acc": 0.7951,
+   "read_macro_f1": 0.8859,
+   "read_recall_by_class": {
+    "none": 0.7951
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC"
+    ],
+    "matrix": [
+     [
+      11768,
+      2010,
+      1022
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.8919,
+   "site_macro_f1": 0.9429,
+   "site_auroc_mod_vs_none": null
+  }
+ },
+ "warnings": [],
+ "train_counts": {
+  "none": 144800,
+  "5mC": 144800,
+  "5hmC": 144800
+ },
+ "best_val_macro_f1": 0.741,
+ "status": "OK",
+ "minutes": 1.6
+}
