@@ -34,6 +34,10 @@ ap.add_argument("--train-samples", default="", help="substring filter: only thes
 ap.add_argument("--epochs", type=int, default=8); ap.add_argument("--batch", type=int, default=512)
 ap.add_argument("--lr", type=float, default=2e-3); ap.add_argument("--max-per-class", type=int, default=150000)
 ap.add_argument("--merge", default="", help="new=a+b+c[,new2=...]: relabel before anything else (e.g. mod=5mC+5hmC+6mA+4mC)")
+ap.add_argument("--renorm", choices=["none", "window"], default="none",
+                help="window: re-centre and re-scale each 21-base window by its own median / MAD, removing "
+                     "read-level normalization differences (139-base oligo reads vs multi-kb genomic reads)")
+ap.add_argument("--crop", type=int, default=0, help="keep only the centre +/- CROP bases of each window (0 = all)")
 ap.add_argument("--seed", type=int, default=0); ap.add_argument("--note", default="")
 a = ap.parse_args()
 os.makedirs(a.out, exist_ok=True)
@@ -68,7 +72,14 @@ def load(paths):
                           np.char.add(":", z["site_strand"][sid]))
         lab_all = z["label"]
         if MERGE: lab_all = np.array([MERGE.get(l, l) for l in lab_all.tolist()])
-        parts.append(dict(sig=z["sig"][keep], dwell=z["dwell"][keep], base=z["base"][keep], label=lab_all[keep],
+        sig, dwl, bas = z["sig"][keep], z["dwell"][keep], z["base"][keep]
+        if a.crop:
+            c = sig.shape[1] // 2; sig, dwl, bas = sig[:, c - a.crop:c + a.crop + 1], dwl[:, c - a.crop:c + a.crop + 1], bas[:, c - a.crop:c + a.crop + 1]
+        if a.renorm == "window":
+            x = sig.astype(np.float32); flat = x.reshape(len(x), -1)
+            med = np.median(flat, 1)[:, None, None]; mad = (np.median(np.abs(flat - med[:, :, 0]), 1) * 1.4826 + 1e-3)[:, None, None]
+            sig = np.clip((x - med) / mad, -6, 6).astype(np.float16)
+        parts.append(dict(sig=sig, dwell=dwl, base=bas, label=lab_all[keep],
                           group=z["group"][keep], key=key, sample=np.full(keep.sum(), sample)))
         say(f"  loaded {sample}: {int(keep.sum()):,} windows {dict(Counter(lab_all[keep].tolist()))}")
     if not parts: return None
