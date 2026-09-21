@@ -1,0 +1,38 @@
+################ access probe
+  readable   /fs/nexus-scratch/bds062/rawhash2-env/rawhash2-storm/test/benchmark/scripts/7_refine_moves_remora.sh
+  readable   /fs/nexus-scratch/bds062/rawhash2-env/rawhash2-storm/test/benchmark/scripts/3_run_dorado.sh
+  readable   /fs/nexus-scratch/bds062/envs/mod/bin/python
+  NO ACCESS  /fs/cbcb-scratch/bds062/results/benchmark_results
+  NO ACCESS  /fs/cbcb-scratch/bds062/results/rawmod_full_pipeline4/features
+  NO ACCESS  /fs/cbcb-scratch/bds062/data/gt
+  h5py: present in unimeth env
+  remora: missing
+
+################ k-mer level table
+  using: /fs/nexus-scratch/bds062/rawhash2-env/rawhash2-storm/extern/local_kmer_models/uncalled_r1041_model_only_means.txt
+
+################ 1. which sequence does a reverse read's signal follow?
+level table: 262,144 9-mers
+reads picked: 150 forward, 150 reverse
+
+read strand  convention    reads  median r     min     max   best k-mer offset
++            ref_order       150     0.768   0.626   0.837   6
++            pore_frame      150     0.768   0.626   0.837   6
+-            ref_order       149    -0.010  -0.043   0.076   8
+-            pore_frame      149     0.757   0.691   0.820   6
+
+Reading: the convention whose r on '-' reads matches the '+' control is the one the signal follows.
+
+################ 2. what forward-only featurization sees at GT sites
+ecoli_dam: 38,248 GT sites = 19,124 modified on the plus strand + 19,124 on the minus strand
+   minus-strand sites with a plus-strand modified base within +/-10: 19,124 (100.0%)   -> 0 positive labels (0.0% of all) show forward reads NO modified base
+ecoli_dcm: 24,100 GT sites = 12,050 modified on the plus strand + 12,050 on the minus strand
+   minus-strand sites with a plus-strand modified base within +/-10: 12,050 (100.0%)   -> 0 positive labels (0.0% of all) show forward reads NO modified base
+anabaena: 34,026 GT sites = 17,013 modified on the plus strand + 17,013 on the minus strand
+   minus-strand sites with a plus-strand modified base within +/-10: 17,013 (100.0%)   -> 0 positive labels (0.0% of all) show forward reads NO modified base
+hpylori_26695: 9,368 GT sites = 6,710 modified on the plus strand + 2,658 on the minus strand
+   minus-strand sites with a plus-strand modified base within +/-10: 118 (4.4%)   -> 2,540 positive labels (27.1% of all) show forward reads NO modified base
+hpylori_j99: 7,398 GT sites = 4,983 modified on the plus strand + 2,415 on the minus strand
+   minus-strand sites with a plus-strand modified base within +/-10: 91 (3.8%)   -> 2,324 positive labels (31.4% of all) show forward reads NO modified base
+tdenticola: 15,370 GT sites = 7,727 modified on the plus strand + 7,643 on the minus strand
+   minus-strand sites with a plus-strand modified base within +/-10: 5,067 (66.3%)   -> 2,576 positive labels (16.8% of all) show forward reads NO modified base
