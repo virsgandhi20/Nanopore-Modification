@@ -79,4 +79,4 @@ d.set_xlabel("what the closed-set model calls them"); d.set_ylim(-0.6, 1.6)
 d.legend(handles=[matplotlib.patches.Patch(color=colr[k], label=f"called {k}") for k in ("none", "5mC", "6mA")], frameon=False, loc="upper center", bbox_to_anchor=(0.36, 1.0), ncol=3, fontsize=9.5)
 d.set_title("D. A chemistry the model never saw is silently mislabelled\n    (flagging AUROC of 0.5 = cannot tell it is new)", x=-0.30)
 
-out = os.path.join(D, "figures", "typing_first_results_2026-09-21.png"); fig.savefig(out, dpi=170); print(os.path.normpath(out))
+out = os.path.join(HERE, "../../figures/typing", "typing_first_results_2026-09-21.png"); fig.savefig(out, dpi=170); print(os.path.normpath(out))

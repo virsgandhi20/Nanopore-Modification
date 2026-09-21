@@ -11,7 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../benchmark_results/unimeth/figures")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../figures/paper_benchmarking")
 os.makedirs(OUT, exist_ok=True)
 BLUE, ORANGE, GREY, RED = "#2C6FB7", "#E8892B", "#9AA0A6", "#C0392B"
 plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11, "axes.spines.top": False,

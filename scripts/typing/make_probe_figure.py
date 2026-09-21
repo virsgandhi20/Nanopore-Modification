@@ -33,4 +33,4 @@ for i in range(4):
 b.set_xticks(range(4)); b.set_yticks(range(4)); b.set_xticklabels(cls); b.set_yticklabels(cls); b.set_xlabel("called as (linear probe)"); b.set_ylabel("true chemistry of the site")
 for s in b.spines.values(): s.set_visible(False)
 b.set_title("B. Checkpoint that never saw 5hmC:\n    errors stay within the base", x=-0.12)
-out = os.path.join(D, "figures"); os.makedirs(out, exist_ok=True); out = os.path.join(out, "rawmod_embedding_probe_2026-09-21.png"); fig.savefig(out, dpi=170); print(os.path.normpath(out))
+out = os.path.join(HERE, "../../figures/typing"); os.makedirs(out, exist_ok=True); out = os.path.join(out, "rawmod_embedding_probe_2026-09-21.png"); fig.savefig(out, dpi=170); print(os.path.normpath(out))
