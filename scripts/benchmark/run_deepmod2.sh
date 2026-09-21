@@ -15,7 +15,8 @@ BENCH=/fs/cbcb-lab/storm/bds062/data/benchmark
 SAM=/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools
 MODEL=${MODEL:-bilstm_r10.4.1_5khz_v5.0}; NREADS=${NREADS:-15000}
 POS_BAM=${POS_BAM:-$ME/unimeth_bench/bam/Ecoli_DM_MSssI_5kHz.moves.bam}
-NEG_BAM=${NEG_BAM:-$ME/typing_overnight/bam/Ecoli_DM_5kHz.moves.bam}
+NEG_BAM=${NEG_BAM:-$(ls $ME/typing_overnight_scav/bam/Ecoli_DM_5kHz.moves.bam $ME/typing_overnight/bam/Ecoli_DM_5kHz.moves.bam 2>/dev/null | head -1)}
+NEG_BAM=${NEG_BAM:-$ME/typing_overnight/bam/Ecoli_DM_5kHz.moves.bam}      # made by tonight's typing basecall job (either copy)
 REFFA=$ME/unimeth_bench/ref/ecoli.fa
 mkdir -p $OUT; STATUS=$OUT/status.txt
 note() { echo "$*" | tee -a $STATUS; }
@@ -29,7 +30,8 @@ if [ "${MODE:-run}" = install ]; then
     $ENVD/bin/pip -q install torch==2.5.1 --index-url https://download.pytorch.org/whl/cu124
     $ENVD/bin/pip -q install numpy numba pysam h5py tqdm ont-fast5-api pod5
     echo "--- versions"; $ENVD/bin/python -c "import torch, numpy, numba, pysam, pod5, h5py; print('torch', torch.__version__, '| numpy', numpy.__version__, '| numba', numba.__version__, '| pod5', pod5.__version__)"
-    echo "--- models shipped in the repository"; ls $SRC/models 2>/dev/null | head -20; find $SRC -maxdepth 3 -iname "*5khz_v5*" | head
+    echo "--- models"; $ENVD/bin/python $SRC/deepmod2 --print_models 2>&1 | head -30; find $SRC -iname "*5khz*" | head
+    echo "--- how models are fetched"; grep -n -iE "download|urlretrieve|urlopen|requests\.|https?://" $SRC/deepmod2 $SRC/src/*.py 2>/dev/null | head -15
     echo "--- CLI"; $ENVD/bin/python $SRC/deepmod2 detect --help 2>&1 | head -60
     du -sh $ENVD $SRC; df -h $ME | tail -1
     exit 0
@@ -44,7 +46,7 @@ for tag in pos neg; do
     # first N reads of the coordinate-sorted BAM = a contiguous region at full depth (as for UniMeth)
     [ -s $W/sub.bam ] || { $SAM view -h $BAM | awk -v n=$NREADS '/^@/ {print; next} c<n {print; c++}' | $SAM view -b -o $W/sub.bam - && $SAM index $W/sub.bam; }
     if ! ls $W/calls/*per_site* > /dev/null 2>&1; then
-        $PY $SRC/deepmod2 detect --bam $W/sub.bam --input $BENCH/bacteria/$S/pod5 --file_type pod5 --model $MODEL \
+        $PY $SRC/deepmod2 detect --bam $W/sub.bam --input $BENCH/bacteria/$S/pod5 --file_type pod5 --model $MODEL --seq_type dna \
             --ref $REFFA --threads 12 --output $W/calls > $W/detect.log 2>&1
         rc=$?; [ $rc -eq 0 ] || { note "$tag ($S): deepmod2 detect FAILED rc=$rc :: $(grep -iE 'error|exception' $W/detect.log | tail -1)"; continue; }
     fi
