@@ -56,6 +56,8 @@ def main():
                          "call frequency throws away when the model is under-confident)")
     ap.add_argument("--freq-scale", type=float, default=1.0,
                     help="divide freq by this (100 for bedMethyl percent)")
+    ap.add_argument("--code-col", type=int, default=None, help="bedMethyl: column holding the mod code (3)")
+    ap.add_argument("--code", default=None, help="keep only rows with this mod code (a, m, h, 21839 ...)")
     ap.add_argument("--label", default="")
     ap.add_argument("--out", default=None, help="append one TSV row here")
     a = ap.parse_args()
@@ -72,6 +74,9 @@ def main():
             if not line.strip() or line.startswith(("#", "chrom", "track")):
                 continue
             c = line.rstrip("\n").split("\t")
+            if len(c) < 6: c = line.split()              # older modkit: space-separated tail
+            if a.code is not None and (len(c) <= a.code_col or c[a.code_col] != a.code):
+                continue
             try:
                 key = (c[a.chrom_col], int(c[a.pos_col]))
                 cov = float(c[a.cov_col])
