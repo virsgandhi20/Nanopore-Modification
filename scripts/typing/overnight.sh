@@ -27,7 +27,10 @@ ENVACT="source /nfshomes/vgandhi/miniconda3/etc/profile.d/conda.sh; conda activa
 MODE=${MODE:-status}
 mkdir -p $RUN/{bam,sites,npz,runs,logs,code} 2>/dev/null
 N=$RUN/npz; S=$RUN/sites
-SBASE="--account=cbcb --partition=cbcb --qos=high --exclude=cbcb25"
+# SBASE can be overridden to send a second, independent copy of the whole run to
+# another queue (use a different RUN so the two copies never share a file), e.g.
+#   RUN=$ME/typing_overnight_scav SBASE="--account=scavenger --partition=scavenger --qos=scavenger --requeue"
+SBASE=${SBASE:-"--account=cbcb --partition=cbcb --qos=high --exclude=cbcb25"}
 
 # ------------------------------------------------------------------ samples
 # name | bam | pod5 | ref | sites (group=bed,...) | label map | mod-base for unstranded beds | reads per site
