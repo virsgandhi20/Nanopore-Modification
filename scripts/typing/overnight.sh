@@ -42,10 +42,10 @@ tdent|$UB/bam/Tdenticola_WT_5kHz.moves.bam|$BENCH/bacteria/Tdenticola_WT_5kHz/po
 j99|$UB/bam/HPJ99_WT_5kHz.moves.bam|$BENCH/bacteria/HPJ99_WT_5kHz/pod5|$UB/ref/hpylori_J99_ATCC700824.fa|d6mA=$S/j99/pos.bed,dneg=$S/j99/neg.bed|d6mA=6mA,dneg=none||12
 EOF
 for R in rep1 rep2; do
-echo "syn_control_$R|$RUN/bam/syn_control_$R.moves.bam|$ONT/subset/control_$R.pod5|$ONT/references/all_5mers.fa|synC=$ONT/references/all_5mers_C_sites.bed,synA=$ONT/references/all_5mers_A_sites.bed|synC=none,synA=none||400 --min-mapq 5"
-echo "syn_5mC_$R|$RUN/bam/syn_5mC_$R.moves.bam|$ONT/subset/5mC_$R.pod5|$ONT/references/all_5mers.fa|synC=$ONT/references/all_5mers_5mC_sites.bed|synC=5mC||400 --min-mapq 5"
-echo "syn_5hmC_$R|$RUN/bam/syn_5hmC_$R.moves.bam|$ONT/subset/5hmC_$R.pod5|$ONT/references/all_5mers.fa|synC=$ONT/references/all_5mers_5hmC_sites.bed|synC=5hmC||400 --min-mapq 5"
-echo "syn_6mA_$R|$RUN/bam/syn_6mA_$R.moves.bam|$ONT/subset/6mA_$R.pod5|$ONT/references/all_5mers.fa|synA=$ONT/references/all_5mers_6mA_sites.bed|synA=6mA||400 --min-mapq 5"
+echo "syn_control_$R|$RUN/bam/syn_control_$R.moves.bam|$ONT/subset/control_$R.pod5|$ONT/references/all_5mers.fa|synC=$ONT/references/all_5mers_C_sites.bed,synA=$ONT/references/all_5mers_A_sites.bed|synC=none,synA=none||400 --min-mapq ${SYN_MAPQ:-5}"
+echo "syn_5mC_$R|$RUN/bam/syn_5mC_$R.moves.bam|$ONT/subset/5mC_$R.pod5|$ONT/references/all_5mers.fa|synC=$ONT/references/all_5mers_5mC_sites.bed|synC=5mC||400 --min-mapq ${SYN_MAPQ:-5}"
+echo "syn_5hmC_$R|$RUN/bam/syn_5hmC_$R.moves.bam|$ONT/subset/5hmC_$R.pod5|$ONT/references/all_5mers.fa|synC=$ONT/references/all_5mers_5hmC_sites.bed|synC=5hmC||400 --min-mapq ${SYN_MAPQ:-5}"
+echo "syn_6mA_$R|$RUN/bam/syn_6mA_$R.moves.bam|$ONT/subset/6mA_$R.pod5|$ONT/references/all_5mers.fa|synA=$ONT/references/all_5mers_6mA_sites.bed|synA=6mA||400 --min-mapq ${SYN_MAPQ:-5}"
 done; }
 extract_cmd() {  # sample-row  out-npz  extra-args
     IFS='|' read -r NAME BAM POD REF SITES LMAP MBASE RPS <<< "$1"
@@ -170,7 +170,7 @@ submit)
             body+="; if [ ! -s $B ]; then $DORADO basecaller $DMODEL $POD --emit-moves --reference $REF > $RUN/bam/$NM.unsorted.bam 2> $RUN/logs/dorado_$NM.err && $SAM sort -@ 8 -o $B $RUN/bam/$NM.unsorted.bam && $SAM index $B; rm -f $RUN/bam/$NM.unsorted.bam; fi"
             body+="; if [ -s $B ]; then echo \"$NM basecall OK: \$($SAM flagstat $B | grep -m1 'mapped (')\" >> $RUN/status/basecall_$tag.txt; else ok=0; echo \"$NM basecall FAILED: \$(tail -2 $RUN/logs/dorado_$NM.err | tr '\\n' ' ')\" >> $RUN/status/basecall_$tag.txt; fi"
         done
-        sub --gres=gpu:1 --cpus-per-task=8 --mem=48G --time=06:00:00 --job-name=ty_bc_$tag --output=$RUN/logs/bc_${tag}_%j.log --wrap="$body; [ \$ok = 1 ]"
+        sub --gres=gpu:1 --cpus-per-task=8 --mem=48G --time=03:00:00 --job-name=ty_bc_$tag --output=$RUN/logs/bc_${tag}_%j.log --wrap="$body; [ \$ok = 1 ]"
     }
     J_DM=$(basecall ecoli_dm "Ecoli_DM_5kHz:$BENCH/bacteria/Ecoli_DM_5kHz/pod5:$UB/ref/ecoli.fa")
     J_WGA=$(basecall hp_wga "HP26695_WGA_5kHz:$BENCH/bacteria/HP26695_WGA_5kHz/pod5:$UB/ref/hpylori_26695.fa")
@@ -181,7 +181,7 @@ submit)
     while IFS= read -r ROW; do NAME=${ROW%%|*}; DEP=""
         case $NAME in ecoli_dm) DEP=$J_DM;; hp_wga) DEP=$J_WGA;; syn_*) DEP=$J_SYN;; esac
         CMD="$PRE; if [ -s $N/$NAME.npz ]; then echo '$NAME extract REUSED' > $RUN/status/extract_$NAME.txt; else $(extract_cmd "$ROW" $N/$NAME.npz) && echo \"$NAME extract OK: \$(du -h $N/$NAME.npz | cut -f1)\" > $RUN/status/extract_$NAME.txt || { echo '$NAME extract FAILED' > $RUN/status/extract_$NAME.txt; exit 1; }; fi"
-        J=$(sub ${DEP:+--dependency=afterany:$DEP} --cpus-per-task=4 --mem=32G --time=04:00:00 --job-name=ty_ex_$NAME --output=$RUN/logs/ex_${NAME}_%j.log --wrap="$CMD")
+        J=$(sub ${DEP:+--dependency=afterany:$DEP} --cpus-per-task=4 --mem=32G --time=02:00:00 --job-name=ty_ex_$NAME --output=$RUN/logs/ex_${NAME}_%j.log --wrap="$CMD")
         echo -e "extract\t$NAME\t$J" >> $RUN/jobs.tsv
         if [ -n "$J" ]; then case $NAME in syn_*) EX_SYN+=":$J";; anabaena|tdent|j99) EX_NOVEL+=":$J";; *) EX_BACT+=":$J";; esac; fi
     done < <(samples)
@@ -190,11 +190,11 @@ submit)
         [[ "$ROW" == *syn_* ]] && DEPS+=$EX_SYN
         [[ "$ROW" == *ecoli_* || "$ROW" == *hp_w* ]] && DEPS+=$EX_BACT
         [[ "$ROW" == *anabaena* ]] && DEPS+=$EX_NOVEL
-        J=$(sub ${DEPS:+--dependency=afterany$DEPS} --gres=gpu:1 --cpus-per-task=6 --mem=64G --time=06:00:00 --job-name=ty_$NAME --output=$RUN/logs/tr_${NAME}_%j.log --wrap="$PRE; $(train_cmd "$ROW" $RUN/runs/$NAME)")
+        J=$(sub ${DEPS:+--dependency=afterany$DEPS} --gres=gpu:1 --cpus-per-task=6 --mem=64G --time=03:00:00 --job-name=ty_$NAME --output=$RUN/logs/tr_${NAME}_%j.log --wrap="$PRE; $(train_cmd "$ROW" $RUN/runs/$NAME)")
         echo -e "train\t$NAME\t$J" >> $RUN/jobs.tsv
     done < <(experiments)
     echo "submitted $(grep -c . $RUN/jobs.tsv) jobs ($(awk -F'\t' '$3==""' $RUN/jobs.tsv | wc -l) failed to submit):"; column -t -s$'\t' $RUN/jobs.tsv
-    squeue -u $USER | head -40 ;;
+    echo; echo "=== scheduler start estimates (worst case; backfill usually beats them)"; squeue -u $USER --start -o "%.9i %.26j %.3t %.20S %R" | head -45 ;;
 
 # =========================================================================== status
 status)
