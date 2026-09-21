@@ -1,0 +1,659 @@
+{
+ "name": "E18_pooled_detect_binary",
+ "note": "per-read detection across all data (RawMod's task, per read)",
+ "args": {
+  "name": "E18_pooled_detect_binary",
+  "out": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/runs/E18_pooled_detect_binary",
+  "train": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_control_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5mC_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5hmC_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_6mA_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_control_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5mC_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5hmC_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_6mA_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_wt.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_dm.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_msssi.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/hp_wt.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/hp_wga.npz",
+  "eval": "anabaena=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/anabaena.npz,tdent=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/tdent.npz,j99=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/j99.npz",
+  "classes": "none,mod",
+  "inputs": "sig,dwell,seq",
+  "groups": "",
+  "train_samples": "",
+  "epochs": 8,
+  "batch": 512,
+  "lr": 0.002,
+  "max_per_class": 150000,
+  "merge": "mod=5mC+5hmC+6mA+4mC",
+  "seed": 0,
+  "note": "per-read detection across all data (RawMod's task, per read)"
+ },
+ "sets": {
+  "test": {
+   "n_windows": 461199,
+   "labels": {
+    "none": 280203,
+    "mod": 180996
+   },
+   "read_acc": 0.8153,
+   "read_macro_f1": 0.8067,
+   "read_recall_by_class": {
+    "none": 0.8443,
+    "mod": 0.7704
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      236585,
+      43618
+     ],
+     [
+      41561,
+      139435
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.8901,
+    "mod": 0.8901
+   },
+   "read_auroc_mod_vs_none": 0.8901,
+   "site_n": 25026,
+   "site_acc": 0.9044,
+   "site_macro_f1": 0.8842,
+   "site_auroc_mod_vs_none": 0.961,
+   "stoichiometry": {
+    "sites": 5853,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.24,
+     "0.1": 0.315,
+     "0.25": 0.389,
+     "0.5": 0.535,
+     "0.75": 0.682,
+     "0.9": 0.757,
+     "1.0": 0.832
+    },
+    "mae": 0.1793,
+    "pearson_r": 0.6958
+   }
+  },
+  "test/ecoli_dm": {
+   "n_windows": 72564,
+   "labels": {
+    "none": 72564
+   },
+   "read_acc": 0.8676,
+   "read_macro_f1": 0.9291,
+   "read_recall_by_class": {
+    "none": 0.8676
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      62956,
+      9608
+     ],
+     [
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 6040,
+   "site_acc": 0.9202,
+   "site_macro_f1": 0.9584,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_msssi": {
+   "n_windows": 14292,
+   "labels": {
+    "mod": 14292
+   },
+   "read_acc": 0.9353,
+   "read_macro_f1": 0.9666,
+   "read_recall_by_class": {
+    "mod": 0.9353
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      0,
+      0
+     ],
+     [
+      925,
+      13367
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "mod": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 1191,
+   "site_acc": 0.9798,
+   "site_macro_f1": 0.9898,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_wt": {
+   "n_windows": 72588,
+   "labels": {
+    "none": 42876,
+    "mod": 29712
+   },
+   "read_acc": 0.9123,
+   "read_macro_f1": 0.9082,
+   "read_recall_by_class": {
+    "none": 0.9527,
+    "mod": 0.8541
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      40848,
+      2028
+     ],
+     [
+      4336,
+      25376
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9702,
+    "mod": 0.9702
+   },
+   "read_auroc_mod_vs_none": 0.9702,
+   "site_n": 6042,
+   "site_acc": 0.9705,
+   "site_macro_f1": 0.9693,
+   "site_auroc_mod_vs_none": 0.9981
+  },
+  "test/hp_wga": {
+   "n_windows": 67963,
+   "labels": {
+    "none": 67963
+   },
+   "read_acc": 0.8591,
+   "read_macro_f1": 0.9242,
+   "read_recall_by_class": {
+    "none": 0.8591
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      58384,
+      9579
+     ],
+     [
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 5662,
+   "site_acc": 0.9288,
+   "site_macro_f1": 0.9631,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/hp_wt": {
+   "n_windows": 68192,
+   "labels": {
+    "mod": 39392,
+    "none": 28800
+   },
+   "read_acc": 0.7402,
+   "read_macro_f1": 0.7395,
+   "read_recall_by_class": {
+    "none": 0.8173,
+    "mod": 0.6838
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      23538,
+      5262
+     ],
+     [
+      12456,
+      26936
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.8304,
+    "mod": 0.8304
+   },
+   "read_auroc_mod_vs_none": 0.8304,
+   "site_n": 5677,
+   "site_acc": 0.7802,
+   "site_macro_f1": 0.7794,
+   "site_auroc_mod_vs_none": 0.8819
+  },
+  "test/syn_5hmC_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "mod": 14800
+   },
+   "read_acc": 0.8349,
+   "read_macro_f1": 0.91,
+   "read_recall_by_class": {
+    "mod": 0.8349
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      0,
+      0
+     ],
+     [
+      2444,
+      12356
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "mod": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.8919,
+   "site_macro_f1": 0.9429,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5hmC_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "mod": 14800
+   },
+   "read_acc": 0.825,
+   "read_macro_f1": 0.9041,
+   "read_recall_by_class": {
+    "mod": 0.825
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      0,
+      0
+     ],
+     [
+      2590,
+      12210
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "mod": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.8919,
+   "site_macro_f1": 0.9429,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5mC_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "mod": 14800
+   },
+   "read_acc": 0.8009,
+   "read_macro_f1": 0.8895,
+   "read_recall_by_class": {
+    "mod": 0.8009
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      0,
+      0
+     ],
+     [
+      2946,
+      11854
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "mod": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.8919,
+   "site_macro_f1": 0.9429,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5mC_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "mod": 14800
+   },
+   "read_acc": 0.803,
+   "read_macro_f1": 0.8907,
+   "read_recall_by_class": {
+    "mod": 0.803
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      0,
+      0
+     ],
+     [
+      2916,
+      11884
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "mod": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.8919,
+   "site_macro_f1": 0.9429,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_6mA_rep1": {
+   "n_windows": 19200,
+   "labels": {
+    "mod": 19200
+   },
+   "read_acc": 0.6629,
+   "read_macro_f1": 0.7973,
+   "read_recall_by_class": {
+    "mod": 0.6629
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      0,
+      0
+     ],
+     [
+      6473,
+      12727
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "mod": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 48,
+   "site_acc": 0.7708,
+   "site_macro_f1": 0.8706,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_6mA_rep2": {
+   "n_windows": 19200,
+   "labels": {
+    "mod": 19200
+   },
+   "read_acc": 0.6628,
+   "read_macro_f1": 0.7972,
+   "read_recall_by_class": {
+    "mod": 0.6628
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      0,
+      0
+     ],
+     [
+      6474,
+      12726
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "mod": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 48,
+   "site_acc": 0.7917,
+   "site_macro_f1": 0.8837,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_control_rep1": {
+   "n_windows": 34000,
+   "labels": {
+    "none": 34000
+   },
+   "read_acc": 0.7499,
+   "read_macro_f1": 0.8571,
+   "read_recall_by_class": {
+    "none": 0.7499
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      25496,
+      8504
+     ],
+     [
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 85,
+   "site_acc": 0.8824,
+   "site_macro_f1": 0.9375,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_control_rep2": {
+   "n_windows": 34000,
+   "labels": {
+    "none": 34000
+   },
+   "read_acc": 0.746,
+   "read_macro_f1": 0.8545,
+   "read_recall_by_class": {
+    "none": 0.746
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      25363,
+      8637
+     ],
+     [
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 85,
+   "site_acc": 0.8824,
+   "site_macro_f1": 0.9375,
+   "site_auroc_mod_vs_none": null
+  },
+  "anabaena": {
+   "n_windows": 191597,
+   "labels": {
+    "none": 95743,
+    "mod": 95854
+   },
+   "read_acc": 0.8464,
+   "read_macro_f1": 0.8459,
+   "read_recall_by_class": {
+    "none": 0.9034,
+    "mod": 0.7896
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      86490,
+      9253
+     ],
+     [
+      20172,
+      75682
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.925,
+    "mod": 0.925
+   },
+   "read_auroc_mod_vs_none": 0.925,
+   "site_n": 15979,
+   "site_acc": 0.9141,
+   "site_macro_f1": 0.914,
+   "site_auroc_mod_vs_none": 0.9784
+  },
+  "tdent": {
+   "n_windows": 192000,
+   "labels": {
+    "mod": 96000,
+    "none": 96000
+   },
+   "read_acc": 0.5703,
+   "read_macro_f1": 0.5121,
+   "read_recall_by_class": {
+    "none": 0.9158,
+    "mod": 0.2249
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      87915,
+      8085
+     ],
+     [
+      74409,
+      21591
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.6755,
+    "mod": 0.6755
+   },
+   "read_auroc_mod_vs_none": 0.6755,
+   "site_n": 16000,
+   "site_acc": 0.5567,
+   "site_macro_f1": 0.4709,
+   "site_auroc_mod_vs_none": 0.7244
+  },
+  "j99": {
+   "n_windows": 192000,
+   "labels": {
+    "mod": 96000,
+    "none": 96000
+   },
+   "read_acc": 0.6872,
+   "read_macro_f1": 0.6782,
+   "read_recall_by_class": {
+    "none": 0.8547,
+    "mod": 0.5197
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "mod"
+    ],
+    "matrix": [
+     [
+      82048,
+      13952
+     ],
+     [
+      46106,
+      49894
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.7705,
+    "mod": 0.7705
+   },
+   "read_auroc_mod_vs_none": 0.7705,
+   "site_n": 16000,
+   "site_acc": 0.7084,
+   "site_macro_f1": 0.6988,
+   "site_auroc_mod_vs_none": 0.8118
+  }
+ },
+ "warnings": [],
+ "train_counts": {
+  "none": 150000,
+  "mod": 150000
+ },
+ "best_val_macro_f1": 0.8139,
+ "status": "OK",
+ "minutes": 2.1
+}

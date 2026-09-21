@@ -1,0 +1,19 @@
+experiment	status	read_macroF1	read_modAUROC	site_acc	stoich_MAE	per-read recall by class (test split)
+E01_syn_type4_all	OK	0.609	0.847	0.7536	0.2144	{"none": 0.811, "5mC": 0.5454, "5hmC": 0.5787, "6mA": 0.4657}
+E02_syn_type4_signal	OK	0.5366	0.7945	0.7246	0.2414	{"none": 0.7356, "5mC": 0.5175, "5hmC": 0.4403, "6mA": 0.4293}
+E03_syn_type4_seqonly	OK	0.2528	0.5177	0.2826	0.4965	{"none": 0.3166, "5mC": 0.2207, "5hmC": 0.1294, "6mA": 0.3736}
+E04_syn_5mC_vs_5hmC	OK	0.7004	0.9068	0.8378	0.1825	{"none": 0.757, "5mC": 0.6902, "5hmC": 0.6541}
+E05_syn_cross_replicate	OK	0.7586	0.9223	0.8991	0.1314	{"none": 0.8328, "5mC": 0.7533, "5hmC": 0.7193, "6mA": 0.7134}
+E06_syn_detect_binary	OK	0.7699	0.8605	0.8333	0.207	{"none": 0.8272, "mod": 0.7333}
+E07_ecoli_type3_all	OK	0.8669	0.9811	0.9343	0.191	{"none": 0.891, "6mA": 0.9527, "5mC": 0.9621}
+E08_ecoli_type3_signal	OK	0.7375	0.9265	0.8933	0.1956	{"none": 0.7703, "6mA": 0.8733, "5mC": 0.8741}
+E09_ecoli_type3_seqonly	OK	0.6416	0.7541	0.6949	0.4741	{"none": 0.688, "6mA": 0.9682, "5mC": 0.5791}
+E10_bact_type4_all	OK	0.6815	0.9334	0.8148	0.2586	{"none": 0.7268, "6mA": 0.8716, "5mC": 0.9194, "4mC": 0.8368}
+E11_xfer_ecoli_to_hp_all	OK	0.6415	0.7661	0.8237	0.2165	{"none": 0.8984, "6mA": 0.3132, "5mC": 0.6607}
+E12_xfer_ecoli_to_hp_signal	OK	0.5198	0.7243	0.7275	0.2156	{"none": 0.6973, "6mA": 0.3946, "5mC": 0.6276}
+E13_xfer_syn_to_bacteria	OK	0.609	0.847	0.7536	0.2144	{"none": 0.811, "5mC": 0.5454, "5hmC": 0.5787, "6mA": 0.4657}
+E14_xfer_bacteria_to_syn	OK	0.6815	0.9334	0.8148	0.2586	{"none": 0.7268, "6mA": 0.8716, "5mC": 0.9194, "4mC": 0.8368}
+E15_openset_4mC	OK	0.7984	0.95	0.8981	0.2056	{"none": 0.8429, "6mA": 0.8518, "5mC": 0.9248}
+E16_openset_5hmC	OK	0.6744	0.8215	0.7941	0.2203	{"none": 0.835, "5mC": 0.632, "6mA": 0.5165}
+E17_pooled_all5	OK	0.5971	0.8649	0.8134	0.2616	{"none": 0.7261, "5mC": 0.7192, "5hmC": 0.5706, "6mA": 0.6059, "4mC": 
+E18_pooled_detect_binary	OK	0.8067	0.8901	0.9044	0.1793	{"none": 0.8443, "mod": 0.7704}

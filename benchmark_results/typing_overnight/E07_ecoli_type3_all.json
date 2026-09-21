@@ -1,0 +1,231 @@
+{
+ "name": "E07_ecoli_type3_all",
+ "note": "E. coli with matched dam-/dcm- controls at the same sites",
+ "args": {
+  "name": "E07_ecoli_type3_all",
+  "out": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/runs/E07_ecoli_type3_all",
+  "train": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_wt.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_dm.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_msssi.npz",
+  "eval": "",
+  "classes": "none,6mA,5mC",
+  "inputs": "sig,dwell,seq",
+  "groups": "",
+  "train_samples": "",
+  "epochs": 8,
+  "batch": 512,
+  "lr": 0.002,
+  "max_per_class": 150000,
+  "merge": "",
+  "seed": 0,
+  "note": "E. coli with matched dam-/dcm- controls at the same sites"
+ },
+ "sets": {
+  "test": {
+   "n_windows": 159444,
+   "labels": {
+    "none": 115440,
+    "5mC": 29052,
+    "6mA": 14952
+   },
+   "read_acc": 0.9097,
+   "read_macro_f1": 0.8669,
+   "read_recall_by_class": {
+    "none": 0.891,
+    "6mA": 0.9527,
+    "5mC": 0.9621
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      102857,
+      9543,
+      3040
+     ],
+     [
+      698,
+      14245,
+      9
+     ],
+     [
+      1081,
+      20,
+      27951
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9811,
+    "6mA": 0.9841,
+    "5mC": 0.9941
+   },
+   "read_auroc_mod_vs_none": 0.9811,
+   "site_n": 13273,
+   "site_acc": 0.9343,
+   "site_macro_f1": 0.8981,
+   "site_auroc_mod_vs_none": 0.9977,
+   "stoichiometry": {
+    "sites": 2495,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.356,
+     "0.1": 0.433,
+     "0.25": 0.505,
+     "0.5": 0.656,
+     "0.75": 0.806,
+     "0.9": 0.881,
+     "1.0": 0.954
+    },
+    "mae": 0.191,
+    "pearson_r": 0.7133
+   }
+  },
+  "test/ecoli_dm": {
+   "n_windows": 72564,
+   "labels": {
+    "none": 72564
+   },
+   "read_acc": 0.8421,
+   "read_macro_f1": 0.9143,
+   "read_recall_by_class": {
+    "none": 0.8421
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      61106,
+      9142,
+      2316
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 6040,
+   "site_acc": 0.8584,
+   "site_macro_f1": 0.9238,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_msssi": {
+   "n_windows": 14292,
+   "labels": {
+    "5mC": 14292
+   },
+   "read_acc": 0.9674,
+   "read_macro_f1": 0.9834,
+   "read_recall_by_class": {
+    "5mC": 0.9674
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      454,
+      12,
+      13826
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 1191,
+   "site_acc": 0.9966,
+   "site_macro_f1": 0.9983,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_wt": {
+   "n_windows": 72588,
+   "labels": {
+    "none": 42876,
+    "5mC": 14760,
+    "6mA": 14952
+   },
+   "read_acc": 0.966,
+   "read_macro_f1": 0.9625,
+   "read_recall_by_class": {
+    "none": 0.9738,
+    "6mA": 0.9527,
+    "5mC": 0.957
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      41751,
+      401,
+      724
+     ],
+     [
+      698,
+      14245,
+      9
+     ],
+     [
+      627,
+      8,
+      14125
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9915,
+    "6mA": 0.9975,
+    "5mC": 0.9954
+   },
+   "read_auroc_mod_vs_none": 0.9915,
+   "site_n": 6042,
+   "site_acc": 0.9978,
+   "site_macro_f1": 0.9976,
+   "site_auroc_mod_vs_none": 1.0
+  }
+ },
+ "warnings": [],
+ "train_counts": {
+  "none": 150000,
+  "6mA": 66240,
+  "5mC": 132312
+ },
+ "best_val_macro_f1": 0.8679,
+ "status": "OK",
+ "minutes": 2.0
+}

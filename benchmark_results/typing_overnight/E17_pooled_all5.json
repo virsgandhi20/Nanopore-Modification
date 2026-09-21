@@ -1,0 +1,1190 @@
+{
+ "name": "E17_pooled_all5",
+ "note": "everything, five classes",
+ "args": {
+  "name": "E17_pooled_all5",
+  "out": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/runs/E17_pooled_all5",
+  "train": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_control_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5mC_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5hmC_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_6mA_rep1.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_control_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5mC_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_5hmC_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/syn_6mA_rep2.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_wt.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_dm.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_msssi.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/hp_wt.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/hp_wga.npz",
+  "eval": "anabaena=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/anabaena.npz,tdent=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/tdent.npz,j99=/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/j99.npz",
+  "classes": "none,5mC,5hmC,6mA,4mC",
+  "inputs": "sig,dwell,seq",
+  "groups": "",
+  "train_samples": "",
+  "epochs": 8,
+  "batch": 512,
+  "lr": 0.002,
+  "max_per_class": 150000,
+  "merge": "",
+  "seed": 0,
+  "note": "everything, five classes"
+ },
+ "sets": {
+  "test": {
+   "n_windows": 461199,
+   "labels": {
+    "none": 280203,
+    "5mC": 73146,
+    "5hmC": 29600,
+    "6mA": 67750,
+    "4mC": 10500
+   },
+   "read_acc": 0.7001,
+   "read_macro_f1": 0.5971,
+   "read_recall_by_class": {
+    "none": 0.7261,
+    "5mC": 0.7192,
+    "5hmC": 0.5706,
+    "6mA": 0.6059,
+    "4mC": 0.847
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      203457,
+      13207,
+      5701,
+      36445,
+      21393
+     ],
+     [
+      10029,
+      52609,
+      5939,
+      3417,
+      1152
+     ],
+     [
+      5326,
+      4418,
+      16891,
+      2814,
+      151
+     ],
+     [
+      16982,
+      2829,
+      4835,
+      41051,
+      2053
+     ],
+     [
+      885,
+      156,
+      37,
+      528,
+      8894
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.8649,
+    "5mC": 0.927,
+    "5hmC": 0.9329,
+    "6mA": 0.8443,
+    "4mC": 0.968
+   },
+   "read_auroc_mod_vs_none": 0.8649,
+   "site_n": 25026,
+   "site_acc": 0.8134,
+   "site_macro_f1": 0.6955,
+   "site_auroc_mod_vs_none": 0.9512,
+   "stoichiometry": {
+    "sites": 5853,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.495,
+     "0.1": 0.548,
+     "0.25": 0.604,
+     "0.5": 0.715,
+     "0.75": 0.829,
+     "0.9": 0.884,
+     "1.0": 0.939
+    },
+    "mae": 0.2616,
+    "pearson_r": 0.5458
+   }
+  },
+  "test/ecoli_dm": {
+   "n_windows": 72564,
+   "labels": {
+    "none": 72564
+   },
+   "read_acc": 0.7343,
+   "read_macro_f1": 0.8468,
+   "read_recall_by_class": {
+    "none": 0.7343
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      53281,
+      3993,
+      393,
+      12603,
+      2294
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 6040,
+   "site_acc": 0.7767,
+   "site_macro_f1": 0.8743,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_msssi": {
+   "n_windows": 14292,
+   "labels": {
+    "5mC": 14292
+   },
+   "read_acc": 0.9412,
+   "read_macro_f1": 0.9697,
+   "read_recall_by_class": {
+    "5mC": 0.9412
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      608,
+      13452,
+      50,
+      108,
+      74
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 1191,
+   "site_acc": 0.9824,
+   "site_macro_f1": 0.9911,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_wt": {
+   "n_windows": 72588,
+   "labels": {
+    "none": 42876,
+    "5mC": 14760,
+    "6mA": 14952
+   },
+   "read_acc": 0.908,
+   "read_macro_f1": 0.922,
+   "read_recall_by_class": {
+    "none": 0.8898,
+    "5mC": 0.9471,
+    "6mA": 0.9215
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      38153,
+      1287,
+      255,
+      1444,
+      1737
+     ],
+     [
+      709,
+      13979,
+      12,
+      29,
+      31
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      861,
+      44,
+      17,
+      13778,
+      252
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9695,
+    "5mC": 0.9926,
+    "6mA": 0.9893
+   },
+   "read_auroc_mod_vs_none": 0.9695,
+   "site_n": 6042,
+   "site_acc": 0.9682,
+   "site_macro_f1": 0.9791,
+   "site_auroc_mod_vs_none": 0.9949
+  },
+  "test/hp_wga": {
+   "n_windows": 67963,
+   "labels": {
+    "none": 67963
+   },
+   "read_acc": 0.6291,
+   "read_macro_f1": 0.7723,
+   "read_recall_by_class": {
+    "none": 0.6291
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      42756,
+      1731,
+      470,
+      9981,
+      13025
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 5662,
+   "site_acc": 0.6743,
+   "site_macro_f1": 0.8055,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/hp_wt": {
+   "n_windows": 68192,
+   "labels": {
+    "6mA": 14398,
+    "4mC": 10500,
+    "none": 28800,
+    "5mC": 14494
+   },
+   "read_acc": 0.7352,
+   "read_macro_f1": 0.7363,
+   "read_recall_by_class": {
+    "none": 0.6768,
+    "5mC": 0.8125,
+    "6mA": 0.6927,
+    "4mC": 0.847
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      19492,
+      2040,
+      214,
+      2968,
+      4086
+     ],
+     [
+      1215,
+      11777,
+      88,
+      475,
+      939
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      2555,
+      334,
+      66,
+      9974,
+      1469
+     ],
+     [
+      885,
+      156,
+      37,
+      528,
+      8894
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.8563,
+    "5mC": 0.9512,
+    "6mA": 0.9151,
+    "4mC": 0.9382
+   },
+   "read_auroc_mod_vs_none": 0.8563,
+   "site_n": 5677,
+   "site_acc": 0.7987,
+   "site_macro_f1": 0.7975,
+   "site_auroc_mod_vs_none": 0.8978
+  },
+  "test/syn_5hmC_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "5hmC": 14800
+   },
+   "read_acc": 0.5797,
+   "read_macro_f1": 0.7339,
+   "read_recall_by_class": {
+    "5hmC": 0.5797
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      2561,
+      2201,
+      8579,
+      1382,
+      77
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5hmC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.7027,
+   "site_macro_f1": 0.8254,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5hmC_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "5hmC": 14800
+   },
+   "read_acc": 0.5616,
+   "read_macro_f1": 0.7193,
+   "read_recall_by_class": {
+    "5hmC": 0.5616
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      2765,
+      2217,
+      8312,
+      1432,
+      74
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5hmC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.7297,
+   "site_macro_f1": 0.8438,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5mC_rep1": {
+   "n_windows": 14800,
+   "labels": {
+    "5mC": 14800
+   },
+   "read_acc": 0.4493,
+   "read_macro_f1": 0.62,
+   "read_recall_by_class": {
+    "5mC": 0.4493
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      3729,
+      6650,
+      2947,
+      1425,
+      49
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.4865,
+   "site_macro_f1": 0.6545,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_5mC_rep2": {
+   "n_windows": 14800,
+   "labels": {
+    "5mC": 14800
+   },
+   "read_acc": 0.4561,
+   "read_macro_f1": 0.6265,
+   "read_recall_by_class": {
+    "5mC": 0.4561
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      3768,
+      6751,
+      2842,
+      1380,
+      59
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37,
+   "site_acc": 0.4865,
+   "site_macro_f1": 0.6545,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_6mA_rep1": {
+   "n_windows": 19200,
+   "labels": {
+    "6mA": 19200
+   },
+   "read_acc": 0.4498,
+   "read_macro_f1": 0.6205,
+   "read_recall_by_class": {
+    "6mA": 0.4498
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      6855,
+      1204,
+      2360,
+      8636,
+      145
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "6mA": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 48,
+   "site_acc": 0.5208,
+   "site_macro_f1": 0.6849,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_6mA_rep2": {
+   "n_windows": 19200,
+   "labels": {
+    "6mA": 19200
+   },
+   "read_acc": 0.4512,
+   "read_macro_f1": 0.6218,
+   "read_recall_by_class": {
+    "6mA": 0.4512
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      6711,
+      1247,
+      2392,
+      8663,
+      187
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "6mA": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 48,
+   "site_acc": 0.5,
+   "site_macro_f1": 0.6667,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_control_rep1": {
+   "n_windows": 34000,
+   "labels": {
+    "none": 34000
+   },
+   "read_acc": 0.7362,
+   "read_macro_f1": 0.8481,
+   "read_recall_by_class": {
+    "none": 0.7362
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      25031,
+      2089,
+      2091,
+      4658,
+      131
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 85,
+   "site_acc": 0.9176,
+   "site_macro_f1": 0.9571,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/syn_control_rep2": {
+   "n_windows": 34000,
+   "labels": {
+    "none": 34000
+   },
+   "read_acc": 0.7277,
+   "read_macro_f1": 0.8424,
+   "read_recall_by_class": {
+    "none": 0.7277
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      24743,
+      2068,
+      2278,
+      4791,
+      120
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 85,
+   "site_acc": 0.9059,
+   "site_macro_f1": 0.9506,
+   "site_auroc_mod_vs_none": null
+  },
+  "anabaena": {
+   "n_windows": 191597,
+   "labels": {
+    "none": 95743,
+    "6mA": 95854
+   },
+   "read_acc": 0.8105,
+   "read_macro_f1": 0.8542,
+   "read_recall_by_class": {
+    "none": 0.8067,
+    "6mA": 0.8143
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      77232,
+      2037,
+      1798,
+      8615,
+      6061
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      8074,
+      3293,
+      785,
+      78051,
+      5651
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9281,
+    "6mA": 0.9284
+   },
+   "read_auroc_mod_vs_none": 0.9281,
+   "site_n": 15979,
+   "site_acc": 0.9008,
+   "site_macro_f1": 0.9277,
+   "site_auroc_mod_vs_none": 0.9735
+  },
+  "tdent": {
+   "n_windows": 192000,
+   "labels": {
+    "6mA": 96000,
+    "none": 96000
+   },
+   "read_acc": 0.5267,
+   "read_macro_f1": 0.5246,
+   "read_recall_by_class": {
+    "none": 0.7992,
+    "6mA": 0.2543
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      76723,
+      1295,
+      1028,
+      10368,
+      6586
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      54270,
+      2217,
+      1126,
+      24409,
+      13978
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.6903,
+    "6mA": 0.6434
+   },
+   "read_auroc_mod_vs_none": 0.6903,
+   "site_n": 16000,
+   "site_acc": 0.5451,
+   "site_macro_f1": 0.521,
+   "site_auroc_mod_vs_none": 0.7362
+  },
+  "j99": {
+   "n_windows": 192000,
+   "labels": {
+    "6mA": 96000,
+    "none": 96000
+   },
+   "read_acc": 0.6623,
+   "read_macro_f1": 0.7086,
+   "read_recall_by_class": {
+    "none": 0.7279,
+    "6mA": 0.5967
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "5mC",
+     "5hmC",
+     "6mA",
+     "4mC"
+    ],
+    "matrix": [
+     [
+      69883,
+      4408,
+      607,
+      12067,
+      9035
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      27068,
+      2303,
+      485,
+      57286,
+      8858
+     ],
+     [
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.7716,
+    "6mA": 0.8031
+   },
+   "read_auroc_mod_vs_none": 0.7716,
+   "site_n": 16000,
+   "site_acc": 0.7009,
+   "site_macro_f1": 0.7408,
+   "site_auroc_mod_vs_none": 0.804
+  }
+ },
+ "warnings": [],
+ "train_counts": {
+  "none": 150000,
+  "5mC": 150000,
+  "5hmC": 144800,
+  "6mA": 150000,
+  "4mC": 46560
+ },
+ "best_val_macro_f1": 0.6223,
+ "status": "OK",
+ "minutes": 3.2
+}

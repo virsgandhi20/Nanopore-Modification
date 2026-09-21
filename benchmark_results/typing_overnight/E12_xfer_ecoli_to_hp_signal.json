@@ -1,0 +1,353 @@
+{
+ "name": "E12_xfer_ecoli_to_hp_signal",
+ "note": "same without sequence input",
+ "args": {
+  "name": "E12_xfer_ecoli_to_hp_signal",
+  "out": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/runs/E12_xfer_ecoli_to_hp_signal",
+  "train": "/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_wt.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_dm.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/ecoli_msssi.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/hp_wt.npz,/fs/nexus-scratch/vgandhi/typing_overnight_scav/npz/hp_wga.npz",
+  "eval": "",
+  "classes": "none,6mA,5mC",
+  "inputs": "sig,dwell",
+  "groups": "",
+  "train_samples": "ecoli",
+  "epochs": 8,
+  "batch": 512,
+  "lr": 0.002,
+  "max_per_class": 150000,
+  "merge": "",
+  "seed": 0,
+  "note": "same without sequence input"
+ },
+ "sets": {
+  "test": {
+   "n_windows": 1060632,
+   "labels": {
+    "none": 757408,
+    "5mC": 125046,
+    "6mA": 110942,
+    "4mC": 67236
+   },
+   "read_acc": 0.6547,
+   "read_macro_f1": 0.5198,
+   "read_recall_by_class": {
+    "none": 0.6973,
+    "6mA": 0.3946,
+    "5mC": 0.6276
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      528108,
+      129551,
+      99749
+     ],
+     [
+      51836,
+      43778,
+      15328
+     ],
+     [
+      37865,
+      8702,
+      78479
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.7243,
+    "6mA": 0.6838,
+    "5mC": 0.8217
+   },
+   "read_auroc_mod_vs_none": 0.7243,
+   "site_n": 82741,
+   "site_acc": 0.7275,
+   "site_macro_f1": 0.5943,
+   "site_auroc_mod_vs_none": 0.7743,
+   "stoichiometry": {
+    "sites": 18470,
+    "reads_per_mix": 16,
+    "mean_estimate_by_true_fraction": {
+     "0": 0.34,
+     "0.1": 0.403,
+     "0.25": 0.467,
+     "0.5": 0.593,
+     "0.75": 0.72,
+     "0.9": 0.785,
+     "1.0": 0.848
+    },
+    "mae": 0.2156,
+    "pearson_r": 0.6125
+   },
+   "openset": {
+    "unknown_labels": {
+     "4mC": 67236
+    },
+    "auroc_unknown_by_low_confidence": 0.4839,
+    "unknown_called_as": {
+     "none": 0.7114,
+     "6mA": 0.1663,
+     "5mC": 0.1223
+    },
+    "mean_confidence_known": 0.8084,
+    "mean_confidence_unknown": 0.8194,
+    "auroc_unknown_vs_known_modified": 0.5245
+   }
+  },
+  "test/ecoli_dm": {
+   "n_windows": 72564,
+   "labels": {
+    "none": 72564
+   },
+   "read_acc": 0.7697,
+   "read_macro_f1": 0.8699,
+   "read_recall_by_class": {
+    "none": 0.7697
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      55854,
+      11214,
+      5496
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 6040,
+   "site_acc": 0.8583,
+   "site_macro_f1": 0.9237,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_msssi": {
+   "n_windows": 14292,
+   "labels": {
+    "5mC": 14292
+   },
+   "read_acc": 0.8661,
+   "read_macro_f1": 0.9282,
+   "read_recall_by_class": {
+    "5mC": 0.8661
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1481,
+      433,
+      12378
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "5mC": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 1191,
+   "site_acc": 0.9471,
+   "site_macro_f1": 0.9728,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/ecoli_wt": {
+   "n_windows": 72588,
+   "labels": {
+    "none": 42876,
+    "5mC": 14760,
+    "6mA": 14952
+   },
+   "read_acc": 0.8152,
+   "read_macro_f1": 0.8047,
+   "read_recall_by_class": {
+    "none": 0.7733,
+    "6mA": 0.8723,
+    "5mC": 0.8791
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      33158,
+      5405,
+      4313
+     ],
+     [
+      1558,
+      13043,
+      351
+     ],
+     [
+      1522,
+      263,
+      12975
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.9224,
+    "6mA": 0.9582,
+    "5mC": 0.964
+   },
+   "read_auroc_mod_vs_none": 0.9224,
+   "site_n": 6042,
+   "site_acc": 0.9174,
+   "site_macro_f1": 0.9146,
+   "site_auroc_mod_vs_none": 0.9847
+  },
+  "test/hp_wga": {
+   "n_windows": 449968,
+   "labels": {
+    "none": 449968
+   },
+   "read_acc": 0.6868,
+   "read_macro_f1": 0.8143,
+   "read_recall_by_class": {
+    "none": 0.6868
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      309028,
+      80230,
+      60710
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": null
+   },
+   "read_auroc_mod_vs_none": null,
+   "site_n": 37468,
+   "site_acc": 0.775,
+   "site_macro_f1": 0.8733,
+   "site_auroc_mod_vs_none": null
+  },
+  "test/hp_wt": {
+   "n_windows": 451220,
+   "labels": {
+    "6mA": 95990,
+    "5mC": 95994,
+    "none": 192000,
+    "4mC": 67236
+   },
+   "read_acc": 0.5571,
+   "read_macro_f1": 0.5185,
+   "read_recall_by_class": {
+    "none": 0.6774,
+    "6mA": 0.3202,
+    "5mC": 0.5534
+   },
+   "confusion_rows_true_cols_pred": {
+    "classes": [
+     "none",
+     "6mA",
+     "5mC"
+    ],
+    "matrix": [
+     [
+      130068,
+      32702,
+      29230
+     ],
+     [
+      50278,
+      30735,
+      14977
+     ],
+     [
+      34862,
+      8006,
+      53126
+     ]
+    ]
+   },
+   "read_auroc_ovr": {
+    "none": 0.6711,
+    "6mA": 0.6702,
+    "5mC": 0.7733
+   },
+   "read_auroc_mod_vs_none": 0.6711,
+   "site_n": 32000,
+   "site_acc": 0.6031,
+   "site_macro_f1": 0.5627,
+   "site_auroc_mod_vs_none": 0.7136,
+   "openset": {
+    "unknown_labels": {
+     "4mC": 67236
+    },
+    "auroc_unknown_by_low_confidence": 0.4899,
+    "unknown_called_as": {
+     "none": 0.7114,
+     "6mA": 0.1663,
+     "5mC": 0.1223
+    },
+    "mean_confidence_known": 0.8109,
+    "mean_confidence_unknown": 0.8194,
+    "auroc_unknown_vs_known_modified": 0.4928
+   }
+  }
+ },
+ "warnings": [],
+ "train_counts": {
+  "none": 150000,
+  "6mA": 66240,
+  "5mC": 132312
+ },
+ "best_val_macro_f1": 0.7382,
+ "status": "OK",
+ "minutes": 1.9
+}
