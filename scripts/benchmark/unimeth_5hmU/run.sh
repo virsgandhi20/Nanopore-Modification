@@ -59,7 +59,8 @@ preflight)
     for b in 01 02 06 07; do [ -r $POD5/barcode$b.pod5 ] && ok "pod5 barcode$b ($(du -h $POD5/barcode$b.pod5 | cut -f1))" || bad "pod5 barcode$b"; done
     [ -s $BASE_CKPT ] && ok "base checkpoint (6mA)" || bad "base checkpoint $BASE_CKPT"
     [ -r $REF ] && ok "reference" || bad "reference $REF"
-    $SAM view ${BAM[bc06]} | head -200 | grep -q "mv:B" && ok "bc06 BAM has move tables" || bad "bc06 BAM lacks mv tags"
+    NMV=$($SAM view ${BAM[bc06]} 2>/dev/null | head -200 | grep -c "mv:B" || true)   # grep -q under pipefail false-fails on a hit
+    [ "${NMV:-0}" -gt 0 ] && ok "bc06 BAM has move tables ($NMV of first 200 records)" || bad "bc06 BAM lacks mv tags"
     FREE=$(df --output=avail -BG $ME | tail -1 | tr -dc 0-9); [ "${FREE:-0}" -ge 8 ] && ok "free space ${FREE}G" || bad "only ${FREE}G free (need ~8G)"
     echo "--- tiny real run as a GPU job (200 reads each, 3 steps): $W/pf"
     mkdir -p $W/pf
