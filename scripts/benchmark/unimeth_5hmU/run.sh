@@ -102,7 +102,7 @@ prep)
         num=\$(case \$b in bc06) echo 06;; bc02) echo 02;; esac)
         [ -s $W/pod5/\${b}_val.pod5 ] || python - <<PY >> $W/status/prep.txt 2>&1
 import numpy as np, pod5
-src = '$POD5/barcode'\$num'.pod5'
+src = '$POD5/barcode\$num.pod5'
 with pod5.Reader(src) as rd: ids = [str(x) for x in rd.read_ids]
 sel = set(np.random.default_rng(0).choice(ids, min($VAL_READS, len(ids)), replace=False).tolist())
 n = 0
