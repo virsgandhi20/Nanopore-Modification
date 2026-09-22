@@ -30,3 +30,6 @@ Your demo with README flags is healthy (CpG calls: 39% below 0.1, 40% above 0.9)
 `shift = sm / scale_dacs_to_pa - shift_dacs_to_pa; scale = sd / scale_dacs_to_pa`. A cheap guard would also help: warn when the normalised signal of the first reads is far from mean 0 / sd 1.
 
 Two smaller things found on the way: the PyPI wheel is still v0.1.0 and ships without `configs/`, and the README uses `unimeth infer` where v0.3.1 installs `unimeth-infer`.
+
+---
+Posted 2026-09-22 as https://github.com/sekeyWang/Unimeth/issues/21 (account virsgandhi20).
