@@ -116,14 +116,26 @@ PY
 train)
     JP=$(awk -F'\t' '$1=="prep"{print $2}' $W/jobs_prep.tsv 2>/dev/null)
     [ -n "$JP" ] && [ -z "$(squeue -h -j $JP 2>/dev/null)" ] && JP=""      # prep already finished and left the queue
-    RUN=${RUN:-$W/runs/hmu_$(date +%m%d_%H%M)}; mkdir -p $RUN           # RUN=<existing run dir> resumes from its last checkpoint-* (UNIMETH_RESUME=1)
-    : > $W/status/train.txt; ls -d $RUN/checkpoint-* >/dev/null 2>&1 && echo "resuming from $(ls -d $RUN/checkpoint-* | sort -t- -k2 -n | tail -1)" >> $W/status/train.txt
-    J=$(sub ${JP:+--dependency=afterany:$JP} $GPU --cpus-per-task=8 --mem=64G --time=08:00:00 --job-name=hmu_train --output=$W/logs/train_%j.log --wrap="$ENVACT; set -uo pipefail; cd $RUN
+    RUN=${RUN:-$W/runs/hmu_$(date +%m%d_%H%M)}; mkdir -p $RUN           # RUN=<existing run dir> continues from its last checkpoint-* (weights only, see below)
+    python3 $HERE/patch2_init_weights.py $UM || exit 1                    # idempotent; adds UNIMETH_INIT_WEIGHTS to the patched clone
+    # The Trainer's own resume (optimizer/rng state via torch.load) is refused by transformers on the cluster's torch 2.5.1,
+    # so a continuation loads the last checkpoint's weights, restarts optimizer + LR schedule, runs the REMAINING steps in a new dir.
+    CK=$( { ls -d $RUN/checkpoint-* 2>/dev/null || true; } | sed 's/.*checkpoint-//' | sort -n | tail -1 )
+    STEPS=$MAX_STEPS; OUT=$RUN; INITENV="UNIMETH_RESUME=0"; NOTE="fresh run from $(basename $BASE_CKPT)"
+    if [ -n "$CK" ]; then
+        INIT=$(ls $RUN/checkpoint-$CK/pytorch_model.bin $RUN/checkpoint-$CK/model.safetensors 2>/dev/null | head -1)
+        [ -n "$INIT" ] || { echo "checkpoint-$CK has no weights file"; exit 1; }
+        STEPS=$((MAX_STEPS - CK)); [ $STEPS -gt 0 ] || { echo "checkpoint-$CK already reached MAX_STEPS=$MAX_STEPS"; exit 1; }
+        OUT=$W/runs/$(basename $RUN)_from$CK; mkdir -p $OUT
+        INITENV="UNIMETH_INIT_WEIGHTS=$INIT UNIMETH_RESUME=0"; NOTE="continuing from $INIT for $STEPS more steps (optimizer and LR schedule restart)"
+    fi
+    : > $W/status/train.txt; echo "$NOTE -> $OUT" | tee -a $W/status/train.txt
+    J=$(sub ${JP:+--dependency=afterany:$JP} $GPU --cpus-per-task=8 --mem=64G --time=08:00:00 --job-name=hmu_train --output=$W/logs/train_%j.log --wrap="$ENVACT; set -uo pipefail; cd $OUT
       for f in $W/bam/bc06.tagged.bam $W/bam/bc02.tagged.bam $W/pod5/bc06_val.pod5 $W/pod5/bc02_val.pod5; do [ -s \$f ] || { echo \"train: missing input \$f\" >> $W/status/train.txt; exit 1; }; done
-      echo \"train started \$(date) run=$RUN steps=$MAX_STEPS batch=$BATCH\" >> $W/status/train.txt
-      PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True UNIMETH_OUT_DIR=$RUN UNIMETH_RESUME=1 UNIMETH_LOG_STEPS=50 UNIMETH_EVAL_STEPS=500 UNIMETH_SAVE_STEPS=500 UNIMETH_DL_WORKERS=6 python -m unimeth.training --mode finetune --bam_dir $W/bam/bc06.tagged.bam,$W/bam/bc02.tagged.bam --train_pod5_dir $POD5/barcode06.pod5,$POD5/barcode02.pod5 --val_pod5_dir $W/pod5/bc06_val.pod5,$W/pod5/bc02_val.pod5 --model_dir $BASE_CKPT $COMMON --dorado_version 1.4 --max_steps $MAX_STEPS --batch_size $BATCH --run_name hmu > $RUN/train.log 2>&1
-      rc=\$?; [ -s $RUN/final.pt ] && echo \"train OK \$(date): $RUN/final.pt; last eval: \$(grep -o \"'eval_\\[5hmU\\]': {[^}]*}\" $RUN/train.log | tail -1 | cut -c1-200)\" >> $W/status/train.txt || echo \"train FAILED rc=\$rc: \$(grep -iE 'error|Traceback' $RUN/train.log | tail -2 | tr '\\n' ' ')\" >> $W/status/train.txt")
-    echo "train: job $J -> $RUN"; echo -e "train\t$J\t$RUN" >> $W/jobs_train.tsv ;;
+      echo \"train started \$(date) run=$OUT steps=$STEPS batch=$BATCH\" >> $W/status/train.txt
+      PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True UNIMETH_OUT_DIR=$OUT $INITENV UNIMETH_LOG_STEPS=50 UNIMETH_EVAL_STEPS=500 UNIMETH_SAVE_STEPS=500 UNIMETH_DL_WORKERS=6 python -m unimeth.training --mode finetune --bam_dir $W/bam/bc06.tagged.bam,$W/bam/bc02.tagged.bam --train_pod5_dir $POD5/barcode06.pod5,$POD5/barcode02.pod5 --val_pod5_dir $W/pod5/bc06_val.pod5,$W/pod5/bc02_val.pod5 --model_dir $BASE_CKPT $COMMON --dorado_version 1.4 --max_steps $STEPS --batch_size $BATCH --run_name hmu > $OUT/train.log 2>&1
+      rc=\$?; [ -s $OUT/final.pt ] && echo \"train OK \$(date): $OUT/final.pt; last eval: \$(grep -o \"'eval_\\[5hmU\\]': {[^}]*}\" $OUT/train.log | tail -1 | cut -c1-200)\" >> $W/status/train.txt || echo \"train FAILED rc=\$rc: \$(grep -iE 'error|Traceback' $OUT/train.log | tail -2 | tr '\\n' ' ')\" >> $W/status/train.txt")
+    echo "train: job $J -> $OUT"; echo -e "train\t$J\t$OUT" >> $W/jobs_train.tsv ;;
 
 eval)
     JT=$(tail -1 $W/jobs_train.tsv | cut -f2); RUN=$(tail -1 $W/jobs_train.tsv | cut -f3); E=$W/eval/$(basename $RUN); mkdir -p $E; : > $W/status/eval.txt
