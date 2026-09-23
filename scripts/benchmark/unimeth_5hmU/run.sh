@@ -34,7 +34,7 @@ ENVACT="source /nfshomes/vgandhi/miniconda3/etc/profile.d/conda.sh; conda activa
 SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"
 GPU="--gres=gpu:rtxa5000:1"
 MODE=${MODE:-status}
-MAX_STEPS=${MAX_STEPS:-3000}; BATCH=${BATCH:-48}; VAL_READS=${VAL_READS:-800}; TEST_LIMIT=${TEST_LIMIT:-15000}
+MAX_STEPS=${MAX_STEPS:-3000}; BATCH=${BATCH:-32}; VAL_READS=${VAL_READS:-800}; TEST_LIMIT=${TEST_LIMIT:-15000}
 mkdir -p $W/{bam,pod5,logs,status,runs,eval} 2>/dev/null
 declare -A BAM=( [bc06]=$SPO1/barcode06.mod.sorted.bam [bc02]=$SPO1/barcode02.mod.sorted.bam [bc07]=$SPO1/barcode07.mod.sorted.bam [bc01]=$W/bam/barcode01.moves.bam )
 declare -A STATE=( [bc06]=modified [bc02]=unmodified [bc07]=modified [bc01]=unmodified )
@@ -115,16 +115,19 @@ PY
 
 train)
     JP=$(awk -F'\t' '$1=="prep"{print $2}' $W/jobs_prep.tsv 2>/dev/null)
-    RUN=$W/runs/hmu_$(date +%m%d_%H%M); mkdir -p $RUN
+    [ -n "$JP" ] && [ -z "$(squeue -h -j $JP 2>/dev/null)" ] && JP=""      # prep already finished and left the queue
+    RUN=${RUN:-$W/runs/hmu_$(date +%m%d_%H%M)}; mkdir -p $RUN           # RUN=<existing run dir> resumes from its last checkpoint-* (UNIMETH_RESUME=1)
+    : > $W/status/train.txt; ls -d $RUN/checkpoint-* >/dev/null 2>&1 && echo "resuming from $(ls -d $RUN/checkpoint-* | sort -t- -k2 -n | tail -1)" >> $W/status/train.txt
     J=$(sub ${JP:+--dependency=afterany:$JP} $GPU --cpus-per-task=8 --mem=64G --time=08:00:00 --job-name=hmu_train --output=$W/logs/train_%j.log --wrap="$ENVACT; set -uo pipefail; cd $RUN
       for f in $W/bam/bc06.tagged.bam $W/bam/bc02.tagged.bam $W/pod5/bc06_val.pod5 $W/pod5/bc02_val.pod5; do [ -s \$f ] || { echo \"train: missing input \$f\" >> $W/status/train.txt; exit 1; }; done
       echo \"train started \$(date) run=$RUN steps=$MAX_STEPS batch=$BATCH\" >> $W/status/train.txt
-      UNIMETH_OUT_DIR=$RUN UNIMETH_RESUME=1 UNIMETH_LOG_STEPS=50 UNIMETH_EVAL_STEPS=500 UNIMETH_SAVE_STEPS=500 UNIMETH_DL_WORKERS=6 python -m unimeth.training --mode finetune --bam_dir $W/bam/bc06.tagged.bam,$W/bam/bc02.tagged.bam --train_pod5_dir $POD5/barcode06.pod5,$POD5/barcode02.pod5 --val_pod5_dir $W/pod5/bc06_val.pod5,$W/pod5/bc02_val.pod5 --model_dir $BASE_CKPT $COMMON --dorado_version 1.4 --max_steps $MAX_STEPS --batch_size $BATCH --run_name hmu > $RUN/train.log 2>&1
+      PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True UNIMETH_OUT_DIR=$RUN UNIMETH_RESUME=1 UNIMETH_LOG_STEPS=50 UNIMETH_EVAL_STEPS=500 UNIMETH_SAVE_STEPS=500 UNIMETH_DL_WORKERS=6 python -m unimeth.training --mode finetune --bam_dir $W/bam/bc06.tagged.bam,$W/bam/bc02.tagged.bam --train_pod5_dir $POD5/barcode06.pod5,$POD5/barcode02.pod5 --val_pod5_dir $W/pod5/bc06_val.pod5,$W/pod5/bc02_val.pod5 --model_dir $BASE_CKPT $COMMON --dorado_version 1.4 --max_steps $MAX_STEPS --batch_size $BATCH --run_name hmu > $RUN/train.log 2>&1
       rc=\$?; [ -s $RUN/final.pt ] && echo \"train OK \$(date): $RUN/final.pt; last eval: \$(grep -o \"'eval_\\[5hmU\\]': {[^}]*}\" $RUN/train.log | tail -1 | cut -c1-200)\" >> $W/status/train.txt || echo \"train FAILED rc=\$rc: \$(grep -iE 'error|Traceback' $RUN/train.log | tail -2 | tr '\\n' ' ')\" >> $W/status/train.txt")
     echo "train: job $J -> $RUN"; echo -e "train\t$J\t$RUN" >> $W/jobs_train.tsv ;;
 
 eval)
-    JT=$(tail -1 $W/jobs_train.tsv | cut -f2); RUN=$(tail -1 $W/jobs_train.tsv | cut -f3); E=$W/eval/$(basename $RUN); mkdir -p $E
+    JT=$(tail -1 $W/jobs_train.tsv | cut -f2); RUN=$(tail -1 $W/jobs_train.tsv | cut -f3); E=$W/eval/$(basename $RUN); mkdir -p $E; : > $W/status/eval.txt
+    [ -n "$JT" ] && [ -z "$(squeue -h -j $JT 2>/dev/null)" ] && JT=""
     J=$(sub ${JT:+--dependency=afterany:$JT} $GPU --cpus-per-task=8 --mem=48G --time=04:00:00 --job-name=hmu_eval --output=$W/logs/eval_%j.log --wrap="$ENVACT; set -uo pipefail
       [ -s $RUN/final.pt ] || { echo 'eval: no final.pt' >> $W/status/eval.txt; exit 1; }
       for b in bc07 bc01; do num=\$(case \$b in bc07) echo 07;; bc01) echo 01;; esac
