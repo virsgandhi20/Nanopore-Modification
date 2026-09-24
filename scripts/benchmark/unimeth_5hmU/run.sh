@@ -39,7 +39,9 @@ mkdir -p $W/{bam,pod5,logs,status,runs,eval} 2>/dev/null
 declare -A BAM=( [bc06]=$SPO1/barcode06.mod.sorted.bam [bc02]=$SPO1/barcode02.mod.sorted.bam [bc07]=$SPO1/barcode07.mod.sorted.bam [bc01]=$W/bam/barcode01.moves.bam )
 declare -A STATE=( [bc06]=modified [bc02]=unmodified [bc07]=modified [bc01]=unmodified )
 COMMON="--pore_type R10.4.1 --frequency 4khz --hmU 1"      # 4khz = the calibrated normalization path (see the UniMeth bug write-up)
-sub() { local id; id=$(sbatch --parsable $SB "$@") || { echo "sbatch failed: $*" >&2; echo ""; return; }; echo ${id%%;*}; }
+sub() {  # syntax-check the job body before it reaches the scheduler (a bad line only surfaces after every earlier line has run)
+    local id a; for a in "$@"; do case "$a" in --wrap=*) bash -n <(printf '%s\n' "${a#--wrap=}") || { echo "NOT submitted: the job body has a shell syntax error (above)" >&2; echo ""; return; };; esac; done
+    id=$(sbatch --parsable $SB "$@") || { echo "sbatch failed: $*" >&2; echo ""; return; }; echo ${id%%;*}; }
 note() { echo "$*" | tee -a $W/status/$MODE.txt; }
 
 case $MODE in
@@ -145,7 +147,7 @@ eval)
     [ -n "$JT" ] && [ -z "$(squeue -h -j $JT 2>/dev/null)" ] && JT=""
     J=$(sub ${JT:+--dependency=afterany:$JT} $GPU --cpus-per-task=8 --mem=48G --time=04:00:00 --job-name=hmu_eval --output=$W/logs/eval_%j.log --wrap="$ENVACT; set -uo pipefail
       [ -s $MODEL ] || { echo \"eval: no model at $MODEL\" >> $W/status/eval.txt; exit 1; }
-      for b in bc07 bc01; do num=\$(case \$b in bc07) echo 07;; bc01) echo 01;; esac
+      for b in bc07 bc01; do num=\$(case \$b in bc07) echo 07;; bc01) echo 01;; esac)
         [ -s $E/\$b.calls.txt ] || python -m unimeth.inference --pod5 $POD5/barcode\$num.pod5 --bam $W/bam/\$b.tagged.bam --model $MODEL $COMMON --output_format tsv --out $E/\$b.calls.txt --num_workers 8 --limit $TEST_LIMIT > $E/\$b.infer.log 2>&1 || { echo \"eval: inference \$b FAILED: \$(grep -iE 'error' $E/\$b.infer.log | tail -1)\" >> $W/status/eval.txt; exit 1; }
         python $ME/Unimeth/scripts/call_modification_frequency.py -i $E/\$b.calls.txt -o $E/\$b.sites.tsv --sort
       done
