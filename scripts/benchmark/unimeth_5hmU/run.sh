@@ -144,7 +144,7 @@ eval)
     echo "eval model=$MODEL -> $E" | tee -a $W/status/eval.txt
     [ -n "$JT" ] && [ -z "$(squeue -h -j $JT 2>/dev/null)" ] && JT=""
     J=$(sub ${JT:+--dependency=afterany:$JT} $GPU --cpus-per-task=8 --mem=48G --time=04:00:00 --job-name=hmu_eval --output=$W/logs/eval_%j.log --wrap="$ENVACT; set -uo pipefail
-      [ -s $MODEL ] || { echo "eval: no model at $MODEL" >> $W/status/eval.txt; exit 1; }
+      [ -s $MODEL ] || { echo \"eval: no model at $MODEL\" >> $W/status/eval.txt; exit 1; }
       for b in bc07 bc01; do num=\$(case \$b in bc07) echo 07;; bc01) echo 01;; esac
         [ -s $E/\$b.calls.txt ] || python -m unimeth.inference --pod5 $POD5/barcode\$num.pod5 --bam $W/bam/\$b.tagged.bam --model $MODEL $COMMON --output_format tsv --out $E/\$b.calls.txt --num_workers 8 --limit $TEST_LIMIT > $E/\$b.infer.log 2>&1 || { echo \"eval: inference \$b FAILED: \$(grep -iE 'error' $E/\$b.infer.log | tail -1)\" >> $W/status/eval.txt; exit 1; }
         python $ME/Unimeth/scripts/call_modification_frequency.py -i $E/\$b.calls.txt -o $E/\$b.sites.tsv --sort
