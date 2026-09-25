@@ -58,6 +58,10 @@ def main():
                     help="divide freq by this (100 for bedMethyl percent)")
     ap.add_argument("--code-col", type=int, default=None, help="bedMethyl: column holding the mod code (3)")
     ap.add_argument("--code", default=None, help="keep only rows with this mod code (a, m, h, 21839 ...)")
+    ap.add_argument("--fill-missing", action="store_true",
+                    help="with --candidates: every candidate position the tool did not score counts as called unmodified "
+                         "(score 0), so a tool with no model for the row's chemistry lands at 0.5 instead of being N/A; "
+                         "positions the tool scored below --min-cov are still excluded")
     ap.add_argument("--label", default="")
     ap.add_argument("--out", default=None, help="append one TSV row here")
     a = ap.parse_args()
@@ -92,8 +96,17 @@ def main():
             acc[key] = (c0 + cov, f0 + cov * freq)
 
     keys = [k for k, (c, _) in acc.items() if c >= a.min_cov]
+    p_list = [acc[k][1] / acc[k][0] for k in keys]
+    n_filled = 0
+    if a.fill_missing:
+        if cand is None:
+            sys.exit("--fill-missing needs --candidates (the set of positions every tool is judged on)")
+        scored = set(keys); low = {k for k in acc if k not in scored}          # scored below the floor: excluded, not filled
+        for k in cand:
+            if k not in scored and k not in low:
+                keys.append(k); p_list.append(0.0); n_filled += 1
     y = np.array([1 if k in gt else 0 for k in keys])
-    p = np.array([acc[k][1] / acc[k][0] for k in keys])
+    p = np.array(p_list)
     if len(y) == 0 or y.sum() == 0 or y.sum() == len(y):
         print(f"{a.label}\tn={len(y)}\tpos={int(y.sum())}\tAUROC=nan (degenerate)", file=sys.stderr)
         sys.exit(1)
@@ -106,6 +119,8 @@ def main():
     print(row)
     if n_skip:
         print(f"(skipped {n_skip} unparsable lines)", file=sys.stderr)
+    if a.fill_missing:
+        print(f"(fill-missing: {n_filled} of {len(y)} candidate positions had no call and were scored 0)", file=sys.stderr)
     if a.out:
         new = not __import__("os").path.exists(a.out)
         with open(a.out, "a") as fo:
