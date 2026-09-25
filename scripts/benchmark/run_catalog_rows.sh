@@ -27,6 +27,7 @@ SAM=/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools
 ENVACT="source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $ME/envs/unimeth"
 MODEL_5mC=$ME/unimeth_models/checkpoints/unimeth_r10.4.1_5kHz_5mC.pt; UNIMETH_SRC=$ME/Unimeth
 DM2_ENV=$ME/envs/deepmod2; DM2_SRC=$ME/deepmod2_bench/DeepMod2; DM2_MODEL=${DM2_MODEL:-bilstm_r10.4.1_5khz_v5.0}
+DM2_THREADS=${DM2_THREADS:-12}; DM2_MEM=${DM2_MEM:-48G}     # human: DM2_THREADS=4 DM2_MEM=120G (each worker holds the 3 Gb reference; 12 workers OOM-killed at 48G)
 NREADS=${NREADS:-15000}
 SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="--gres=gpu:rtxa5000:1"
 CPU="--account=cbcb --partition=cbcb --qos=high"
@@ -60,7 +61,7 @@ unimeth)
     : > $W/status/unimeth.txt
     J=$(sub $(dep prep) $GPU --cpus-per-task=8 --mem=48G --time=06:00:00 --job-name=cat_um_$SHORT --output=$W/logs/unimeth_%j.log --wrap="$ENVACT; set -uo pipefail; U=$W/unimeth; mkdir -p \$U
       [ -s $W/sub.bam ] && [ -s $W/cand_cpg.bed ] || { echo 'unimeth: prep outputs missing, run MODE=prep first' >> $W/status/unimeth.txt; exit 1; }
-      [ -s \$U/calls.txt ] || unimeth-infer --pod5 $POD5 --bam $W/sub.bam --model $MODEL_5mC --pore_type R10.4.1 --frequency 4khz --cpg 1 --chg 1 --chh 1 --output_format tsv --out \$U/calls.txt --num_workers 8 > \$U/infer.log 2>&1 || { echo \"unimeth: inference FAILED: \$(grep -iE 'error' \$U/infer.log | tail -1)\" >> $W/status/unimeth.txt; exit 1; }
+      [ -s \$U/calls.txt ] || unimeth-infer --pod5 $POD5 --bam $W/sub.bam --model $MODEL_5mC --pore_type R10.4.1 --frequency 4khz --cpg 1 --chg 1 --chh 1 --output_format tsv --out \$U/calls.txt --num_workers 8 --signal_index \$U/signal-index.sqlite > \$U/infer.log 2>&1 || { echo \"unimeth: inference FAILED: \$(grep -iE 'error' \$U/infer.log | tail -1)\" >> $W/status/unimeth.txt; exit 1; }
       [ -s \$U/sites.tsv ] || python $UNIMETH_SRC/scripts/call_modification_frequency.py -i \$U/calls.txt -o \$U/sites.tsv --sort
       for ctx in cpg noncpg; do
         [ -s $W/cand_\$ctx.bed ] || { echo \"no candidates for \$ctx, row skipped\" >> $W/status/unimeth.txt; continue; }
@@ -72,9 +73,9 @@ unimeth)
 
 deepmod2)
     : > $W/status/deepmod2.txt
-    J=$(sub $(dep prep) $GPU --cpus-per-task=12 --mem=48G --time=08:00:00 --job-name=cat_dm2_$SHORT --output=$W/logs/deepmod2_%j.log --wrap="set -uo pipefail; D=$W/deepmod2; mkdir -p \$D
+    J=$(sub $(dep prep) $GPU --cpus-per-task=$DM2_THREADS --mem=$DM2_MEM --time=08:00:00 --job-name=cat_dm2_$SHORT --output=$W/logs/deepmod2_%j.log --wrap="set -uo pipefail; D=$W/deepmod2; mkdir -p \$D
       [ -s $W/sub.bam ] && [ -s $W/cand_cpg.bed ] || { echo 'deepmod2: prep outputs missing, run MODE=prep first' >> $W/status/deepmod2.txt; exit 1; }
-      ls \$D/calls/*per_site* > /dev/null 2>&1 || $DM2_ENV/bin/python $DM2_SRC/deepmod2 detect --bam $W/sub.bam --input $POD5 --file_type pod5 --model $DM2_MODEL --seq_type dna --ref $W/ref.fa --threads 12 --output \$D/calls > \$D/detect.log 2>&1 || { echo \"deepmod2 detect FAILED: \$(grep -iE 'error|exception' \$D/detect.log | tail -1)\" >> $W/status/deepmod2.txt; exit 1; }
+      ls \$D/calls/*per_site* > /dev/null 2>&1 || $DM2_ENV/bin/python $DM2_SRC/deepmod2 detect --bam $W/sub.bam --input $POD5 --file_type pod5 --model $DM2_MODEL --seq_type dna --ref $W/ref.fa --threads $DM2_THREADS --output \$D/calls > \$D/detect.log 2>&1 || { echo \"deepmod2 detect FAILED: \$(grep -iE 'error|exception' \$D/detect.log | tail -1)\" >> $W/status/deepmod2.txt; exit 1; }
       $ENVACT
       python $REPO/scripts/benchmark/deepmod2_sites.py \$D/calls \$D/sites.tsv >> $W/status/deepmod2.txt 2>&1 || exit 1
       python $REPO/scripts/benchmark/score_sites.py --calls \$D/sites.tsv --gt $W/gt_cpg.bed --candidates $W/cand_cpg.bed --min-cov $MINCOV --chrom-col 0 --pos-col 1 --cov-col 2 --freq-col 3 --label \"DeepMod2 CpG $SHORT cov$MINCOV\" --out $W/status/table.tsv >> $W/status/deepmod2.txt 2>&1
