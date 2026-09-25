@@ -18,7 +18,11 @@ ME=/fs/nexus-scratch/vgandhi
 DS=${DS:?set DS=<dataset folder name under $CAT>}
 SHORT=${SHORT:-${DS%%_*}}
 W=${WBASE:-/fs/cbcb-lab/storm/vgandhi/euk}/$DS; mkdir -p $W/logs $W/status
-SRC_BAM=$CAT/$DS/basecalled/reads.bam; POD5=$CAT/$DS/pod5_files; GT=$CAT/$DS/ground_truth
+# Defaults follow the collection's layout; each can be overridden for a dataset outside it (rice):
+#   SRC_BAM=<move-table BAM> POD5=<pod5 dir> REF_SRC=<fasta> GT_POS="<positives bed(s)>" GT_CAND="<candidate bed(s)>"
+SRC_BAM=${SRC_BAM:-$CAT/$DS/basecalled/reads.bam}; POD5=${POD5:-$CAT/$DS/pod5_files}; GT=$CAT/$DS/ground_truth
+REF_SRC=${REF_SRC:-$CAT/$DS/ref.fa}; GT_POS=${GT_POS:-"$GT/gt_plus.bed $GT/gt_minus.bed"}; GT_CAND=${GT_CAND:-"$GT/cand_plus.bed $GT/cand_minus.bed"}
+MINCOV=${MINCOV:-10}          # coverage floor for scoring; the human set is ~1x, so its row needs MINCOV=1 and more reads
 SAM=/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools
 ENVACT="source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $ME/envs/unimeth"
 MODEL_5mC=$ME/unimeth_models/checkpoints/unimeth_r10.4.1_5kHz_5mC.pt; UNIMETH_SRC=$ME/Unimeth
@@ -33,21 +37,21 @@ sub() {  # syntax-check the job body, then submit; prints the job id (empty on f
     id=$(sbatch --parsable $SB "$@") || { echo "sbatch failed: $*" >&2; echo ""; return; }; echo ${id%%;*}; }
 dep() { local j; j=$(awk -v k=$1 -F'\t' '$1==k{print $2}' $W/jobs.tsv 2>/dev/null | tail -1); [ -n "$j" ] && [ -n "$(squeue -h -j $j 2>/dev/null)" ] && echo "--dependency=afterany:$j"; }
 
-for p in $SRC_BAM $POD5 $GT/gt_plus.bed $GT/cand_plus.bed; do [ -e $p ] || { echo "missing: $p"; exit 1; }; done
+for p in $SRC_BAM $POD5 $REF_SRC $GT_POS $GT_CAND; do [ -e $p ] || { echo "missing: $p"; exit 1; }; done
 
 case $MODE in
 prep)
     : > $W/status/prep.txt
     J=$(sub $CPU --cpus-per-task=8 --mem=32G --time=08:00:00 --job-name=cat_prep_$SHORT --output=$W/logs/prep_%j.log --wrap="$ENVACT; set -uo pipefail; cd $W
-      [ -s $W/ref.fa.fai ] || { cp -L $CAT/$DS/ref.fa $W/ref.fa && $SAM faidx $W/ref.fa && echo 'reference copied and indexed' >> $W/status/prep.txt; }
+      [ -s $W/ref.fa.fai ] || { cp -L $REF_SRC $W/ref.fa && $SAM faidx $W/ref.fa && echo 'reference copied and indexed' >> $W/status/prep.txt; }
       if [ ! -s $W/reads.sorted.bam ]; then
         if $SAM view -H $SRC_BAM | grep -q 'SO:coordinate'; then ln -sf $SRC_BAM $W/reads.sorted.bam; { [ -s $SRC_BAM.bai ] && ln -sf $SRC_BAM.bai $W/reads.sorted.bam.bai; } || $SAM index $W/reads.sorted.bam; echo 'source BAM already coordinate-sorted' >> $W/status/prep.txt
         else $SAM sort -@ 8 -m 2G -T $W/tmp_sort -o $W/reads.sorted.bam $SRC_BAM && $SAM index $W/reads.sorted.bam && echo 'BAM sorted and indexed' >> $W/status/prep.txt; fi
       fi
-      [ -s $W/sub.bam ] || { $SAM view -h $W/reads.sorted.bam | awk -v n=$NREADS '/^@/ {print; next} c<n {print; c++}' | $SAM view -b -o $W/sub.bam - && $SAM index $W/sub.bam; }
+      if [ $NREADS -eq 0 ]; then ln -sf $W/reads.sorted.bam $W/sub.bam; ln -sf $W/reads.sorted.bam.bai $W/sub.bam.bai; else [ -s $W/sub.bam ] || { $SAM view -h $W/reads.sorted.bam | awk -v n=$NREADS '/^@/ {print; next} c<n {print; c++}' | $SAM view -b -o $W/sub.bam - && $SAM index $W/sub.bam; }; fi
       echo \"sub.bam: \$($SAM view -c $W/sub.bam) alignments, mv tags in first 200: \$($SAM view $W/sub.bam | head -200 | grep -c 'mv:B'), span: \$($SAM view $W/sub.bam | awk 'NR==1{c=\$3; s=\$4} {e=\$4} END{print c\":\"s\"-\"e}')\" >> $W/status/prep.txt
-      python $REPO/scripts/ground_truth/split_by_context.py --ref $W/ref.fa --bed $GT/gt_plus.bed $GT/gt_minus.bed --out-cpg $W/gt_cpg.bed --out-noncpg $W/gt_noncpg.bed >> $W/status/prep.txt 2>&1
-      python $REPO/scripts/ground_truth/split_by_context.py --ref $W/ref.fa --bed $GT/cand_plus.bed $GT/cand_minus.bed --out-cpg $W/cand_cpg.bed --out-noncpg $W/cand_noncpg.bed >> $W/status/prep.txt 2>&1
+      python $REPO/scripts/ground_truth/split_by_context.py --ref $W/ref.fa --bed $GT_POS --out-cpg $W/gt_cpg.bed --out-noncpg $W/gt_noncpg.bed >> $W/status/prep.txt 2>&1
+      python $REPO/scripts/ground_truth/split_by_context.py --ref $W/ref.fa --bed $GT_CAND --out-cpg $W/cand_cpg.bed --out-noncpg $W/cand_noncpg.bed >> $W/status/prep.txt 2>&1
       wc -l $W/gt_cpg.bed $W/gt_noncpg.bed $W/cand_cpg.bed $W/cand_noncpg.bed | sed 's/^/  /' >> $W/status/prep.txt
       echo \"prep finished \$(date)\" >> $W/status/prep.txt")
     echo "prep: job $J -> $W"; echo -e "prep\t$J" >> $W/jobs.tsv ;;
@@ -60,8 +64,8 @@ unimeth)
       [ -s \$U/sites.tsv ] || python $UNIMETH_SRC/scripts/call_modification_frequency.py -i \$U/calls.txt -o \$U/sites.tsv --sort
       for ctx in cpg noncpg; do
         [ -s $W/cand_\$ctx.bed ] || { echo \"no candidates for \$ctx, row skipped\" >> $W/status/unimeth.txt; continue; }
-        python $REPO/scripts/benchmark/score_sites.py --calls \$U/sites.tsv --gt $W/gt_\$ctx.bed --candidates $W/cand_\$ctx.bed --min-cov 10 --label \"UniMeth 5mC \$ctx $SHORT (call freq)\" --out $W/status/table.tsv >> $W/status/unimeth.txt 2>&1
-        python $REPO/scripts/benchmark/score_sites.py --calls \$U/sites.tsv --gt $W/gt_\$ctx.bed --candidates $W/cand_\$ctx.bed --min-cov 10 --num-col 5 --label \"UniMeth 5mC \$ctx $SHORT (mean P)\" --out $W/status/table.tsv >> $W/status/unimeth.txt 2>&1
+        python $REPO/scripts/benchmark/score_sites.py --calls \$U/sites.tsv --gt $W/gt_\$ctx.bed --candidates $W/cand_\$ctx.bed --min-cov $MINCOV --label \"UniMeth 5mC \$ctx $SHORT cov$MINCOV (call freq)\" --out $W/status/table.tsv >> $W/status/unimeth.txt 2>&1
+        python $REPO/scripts/benchmark/score_sites.py --calls \$U/sites.tsv --gt $W/gt_\$ctx.bed --candidates $W/cand_\$ctx.bed --min-cov $MINCOV --num-col 5 --label \"UniMeth 5mC \$ctx $SHORT cov$MINCOV (mean P)\" --out $W/status/table.tsv >> $W/status/unimeth.txt 2>&1
       done
       echo \"unimeth finished \$(date)\" >> $W/status/unimeth.txt")
     echo "unimeth: job $J -> $W/unimeth"; echo -e "unimeth\t$J" >> $W/jobs.tsv ;;
@@ -73,7 +77,7 @@ deepmod2)
       ls \$D/calls/*per_site* > /dev/null 2>&1 || $DM2_ENV/bin/python $DM2_SRC/deepmod2 detect --bam $W/sub.bam --input $POD5 --file_type pod5 --model $DM2_MODEL --seq_type dna --ref $W/ref.fa --threads 12 --output \$D/calls > \$D/detect.log 2>&1 || { echo \"deepmod2 detect FAILED: \$(grep -iE 'error|exception' \$D/detect.log | tail -1)\" >> $W/status/deepmod2.txt; exit 1; }
       $ENVACT
       python $REPO/scripts/benchmark/deepmod2_sites.py \$D/calls \$D/sites.tsv >> $W/status/deepmod2.txt 2>&1 || exit 1
-      python $REPO/scripts/benchmark/score_sites.py --calls \$D/sites.tsv --gt $W/gt_cpg.bed --candidates $W/cand_cpg.bed --min-cov 10 --chrom-col 0 --pos-col 1 --cov-col 2 --freq-col 3 --label \"DeepMod2 CpG $SHORT\" --out $W/status/table.tsv >> $W/status/deepmod2.txt 2>&1
+      python $REPO/scripts/benchmark/score_sites.py --calls \$D/sites.tsv --gt $W/gt_cpg.bed --candidates $W/cand_cpg.bed --min-cov $MINCOV --chrom-col 0 --pos-col 1 --cov-col 2 --freq-col 3 --label \"DeepMod2 CpG $SHORT cov$MINCOV\" --out $W/status/table.tsv >> $W/status/deepmod2.txt 2>&1
       echo \"deepmod2 finished \$(date)\" >> $W/status/deepmod2.txt")
     echo "deepmod2: job $J -> $W/deepmod2"; echo -e "deepmod2\t$J" >> $W/jobs.tsv ;;
 
