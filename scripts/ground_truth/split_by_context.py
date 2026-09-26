@@ -16,6 +16,7 @@ ap.add_argument("--one-based", action="store_true", help="input positions are 1-
 a = ap.parse_args()
 fa = pysam.FastaFile(a.ref)
 seqs = {}
+known = set(fa.references); unknown = {}
 def base(ctg, p):
     s = seqs.get(ctg)
     if s is None:
@@ -29,6 +30,8 @@ with open(a.out_cpg, "w") as fc, open(a.out_noncpg, "w") as fn:
             if len(f) < 2 or f[0].startswith("#"):
                 continue
             ctg, p = f[0], int(f[1]) - (1 if a.one_based else 0)
+            if ctg not in known:                                  # e.g. EM-seq spike-ins (lambda, pUC19) absent from the nanopore reference
+                unknown[ctg] = unknown.get(ctg, 0) + 1; continue
             if (ctg, p) in n["seen"]:
                 continue
             n["seen"].add((ctg, p))
@@ -41,5 +44,7 @@ with open(a.out_cpg, "w") as fc, open(a.out_noncpg, "w") as fn:
                 n["notC"] += 1; continue
             (fc if ctx == "cpg" else fn).write(f"{ctg}\t{p}\n"); n[ctx] += 1
 print(f"split_by_context: {len(n['seen']):,} positions -> CpG {n['cpg']:,}, non-CpG {n['noncpg']:,}, not a C/G {n['notC']:,}", file=sys.stderr)
+if unknown:
+    print("split_by_context: skipped contigs absent from the reference: " + ", ".join(f"{k} ({v:,})" for k, v in unknown.items()), file=sys.stderr)
 if n["notC"] > 0.05 * max(1, len(n["seen"])):
     print("WARNING: more than 5 percent of positions are not on a C or G; check the coordinate convention (--one-based?)", file=sys.stderr)
