@@ -15,6 +15,8 @@ source $HOME/miniconda3/etc/profile.d/conda.sh
 [ -x $ENVD/bin/python ] || { conda create -y -q -p $ENVD python=3.10 pip > $ME/rockfish_bench/conda_create.log 2>&1 && note "env created" || { note "conda create FAILED (see conda_create.log)"; exit 1; }; }
 conda activate $ENVD
 [ -d $SRC/.git ] || { git clone -q --branch r10.4.1 https://github.com/lbcb-sci/rockfish.git $SRC && note "cloned r10.4.1 branch: $(cd $SRC && git log --oneline -1)" || { note "clone FAILED"; exit 1; }; }
+# mappy (minimap2 binding) has no wheel and the login node has no compiler: take the prebuilt one from bioconda first
+python -c "import mappy" 2>/dev/null || { conda install -y -q -c conda-forge -c bioconda mappy > $ME/rockfish_bench/conda_mappy.log 2>&1 && note "mappy installed from bioconda" || { note "mappy install FAILED (see conda_mappy.log)"; exit 1; }; }
 python -c "import rockfish" 2>/dev/null || { (cd $SRC && pip install -q . > $ME/rockfish_bench/pip.log 2>&1) && note "pip install OK: torch $(python -c 'import torch; print(torch.__version__, torch.cuda.is_available())' 2>&1 | tail -1)" || { note "pip install FAILED (see pip.log): $(tail -3 $ME/rockfish_bench/pip.log | tr '\n' ' ')"; exit 1; }; }
 ls $MODELS/* > /dev/null 2>&1 || { mkdir -p $MODELS && rockfish download -m 5kHz -s $MODELS > $ME/rockfish_bench/download.log 2>&1 && note "model downloaded: $(ls $MODELS | tr '\n' ' ')" || { note "model download FAILED: $(tail -2 $ME/rockfish_bench/download.log | tr '\n' ' ')"; exit 1; }; }
 note "--- rockfish inference --help"; rockfish inference --help 2>&1 | head -60 | tee -a $STATUS
