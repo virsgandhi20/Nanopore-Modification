@@ -20,6 +20,7 @@ conda activate $ENVD
 # mappy (minimap2 binding) has no wheel and the login node has no compiler: take the prebuilt one from bioconda first
 python -c "import mappy" 2>/dev/null || { conda install -y -q -c conda-forge -c bioconda mappy > $ME/rockfish_bench/conda_mappy.log 2>&1 && note "mappy installed from bioconda" || { note "mappy install FAILED (see conda_mappy.log)"; exit 1; }; }
 python -c "import rockfish" 2>/dev/null || { (cd $SRC && pip install -q --no-cache-dir . > $ME/rockfish_bench/pip.log 2>&1) && note "pip install OK: torch $(python -c 'import torch; print(torch.__version__, torch.cuda.is_available())' 2>&1 | tail -1)" || { note "pip install FAILED (see pip.log): $(tail -3 $ME/rockfish_bench/pip.log | tr '\n' ' ')"; exit 1; }; }
+python -c "import pkg_resources" 2>/dev/null || { pip install -q --no-cache-dir "setuptools<81" > $ME/rockfish_bench/pip_setuptools.log 2>&1 && note "setuptools (pkg_resources) installed" || { note "setuptools install FAILED (see pip_setuptools.log)"; exit 1; }; }   # rockfish download imports pkg_resources; the env came without it
 ls $MODELS/* > /dev/null 2>&1 || { mkdir -p $MODELS && rockfish download -m 5kHz -s $MODELS > $ME/rockfish_bench/download.log 2>&1 && note "model downloaded: $(ls $MODELS | tr '\n' ' ')" || { note "model download FAILED: $(tail -2 $ME/rockfish_bench/download.log | tr '\n' ' ')"; exit 1; }; }
 note "--- rockfish inference --help"; rockfish inference --help 2>&1 | head -60 | tee -a $STATUS
 # 200-read CPU smoke test: subset the collection's M.SssI basecalls, run, show the output's head
