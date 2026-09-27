@@ -148,12 +148,26 @@ for r in rows:
                               res.get("auroc", ""), res.get("auprc", ""), res.get("filled", ""), res.get("detail", "")))
             if metric == primary: grid[(r["row"], tool)] = res.get("auroc", res["status"])
             log(f"  {tool:14s} {metric:9s} {res['status']:7s} AUROC {res.get('auroc', '-'):7s} AUPRC {res.get('auprc', '-'):7s} n {res.get('n_sites', '-'):>9s} filled {res.get('filled', '-'):>8s} {res.get('detail', '')}")
-with open(os.path.join(a.work, "matrix_long.tsv"), "w") as f:
+# a partial run (--only, or a tool whose sites are missing) keeps the earlier results of the rows and cells it did not touch
+long_path, grid_path = os.path.join(a.work, "matrix_long.tsv"), os.path.join(a.work, "matrix_grid.tsv")
+scored_rows = {t[0] for t in long_rows}
+if os.path.exists(long_path):
+    for line in open(long_path):
+        c = line.rstrip("\n").split("\t")
+        if c[0] != "row" and len(c) >= 11 and c[0] not in scored_rows: long_rows.append(tuple(c[:11]))
+if os.path.exists(grid_path):
+    for line in open(grid_path):
+        c = line.rstrip("\n").split("\t")
+        if c[0] == "row": old_tools = c[2:]; continue
+        for t, v in zip(old_tools, c[2:]):
+            if v and (c[0], t) not in grid: grid[(c[0], t)] = v
+order = {r["row"]: i for i, r in enumerate(rows)}
+with open(long_path, "w") as f:
     f.write("row\ttool\tmetric\tstatus\tn_sites\tn_pos\tpos_rate\tauroc\tauprc\tn_filled\tdetail\n")
-    for t in long_rows: f.write("\t".join(t) + "\n")
-with open(os.path.join(a.work, "matrix_grid.tsv"), "w") as f:
-    f.write("row\tchem\t" + "\t".join(tools) + "\n")
+    for t in sorted(long_rows, key=lambda t: (order.get(t[0], 999), t[1], t[2])): f.write("\t".join(t) + "\n")
+all_tools = list(tools) + [t for (_, t) in grid if t not in tools]
+with open(grid_path, "w") as f:
+    f.write("row\tchem\t" + "\t".join(all_tools) + "\n")
     for r in rows:
-        if only and r["row"] not in only: continue
-        f.write(r["row"] + "\t" + r["chem"] + "\t" + "\t".join(grid.get((r["row"], t), "") for t in tools) + "\n")
+        f.write(r["row"] + "\t" + r["chem"] + "\t" + "\t".join(grid.get((r["row"], t), "") for t in all_tools) + "\n")
 log(f"wrote {a.work}/matrix_long.tsv and matrix_grid.tsv")
