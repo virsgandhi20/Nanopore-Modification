@@ -165,7 +165,7 @@ order = {r["row"]: i for i, r in enumerate(rows)}
 with open(long_path, "w") as f:
     f.write("row\ttool\tmetric\tstatus\tn_sites\tn_pos\tpos_rate\tauroc\tauprc\tn_filled\tdetail\n")
     for t in sorted(long_rows, key=lambda t: (order.get(t[0], 999), t[1], t[2])): f.write("\t".join(t) + "\n")
-all_tools = list(tools) + [t for (_, t) in grid if t not in tools]
+all_tools = list(tools) + sorted({t for (_, t) in grid if t not in tools})
 with open(grid_path, "w") as f:
     f.write("row\tchem\t" + "\t".join(all_tools) + "\n")
     for r in rows:
