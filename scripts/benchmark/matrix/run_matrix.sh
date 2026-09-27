@@ -24,7 +24,7 @@ MODELS=$ME/unimeth_models/checkpoints
 M_5mC=$MODELS/unimeth_r10.4.1_5kHz_5mC.pt; M_6mA=$MODELS/unimeth_r10.4.1_5kHz_6mA.pt
 M_5hmU=${M_5hmU:-$ME/unimeth_5hmU/runs/hmu_0922_1446_from1000_from1500/final.pt}     # the 3,000-step model (0.7725 held out)
 DORADO=/fs/cbcb-lab/storm/shared/rawhash2/basecallers/dorado-1.4.0-linux-x64/bin/dorado; DMODEL=$ME/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0
-RF_ENV=$ME/envs/rockfish; RF_MODEL=${RF_MODEL:-$ME/rockfish_bench/models/rf_5kHz.ckpt}
+RF_ENV=$ME/envs/rockfish; RF_MODEL=${RF_MODEL:-$ME/rockfish_bench/models/rf_5kHz.ckpt}; RF_OFFSET=${RF_OFFSET:-0}   # RF_OFFSET=-1 if rockfish_pos_check.py shows 1-based positions
 DM2_ENV=$ME/envs/deepmod2; DM2_SRC=$ME/deepmod2_bench/DeepMod2; DM2_MODEL=${DM2_MODEL:-bilstm_r10.4.1_5khz_v5.0}
 SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="--gres=gpu:rtxa5000:1"
 CPU="--account=cbcb --partition=cbcb --qos=high"
@@ -156,10 +156,15 @@ _infer)
     rockfish)
         source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $RF_ENV
         [ -s $RF_MODEL ] || { echo "model missing: $RF_MODEL" > $T/FAILED; exit 1; }
-        if [ -d ${POD5[$d]} ]; then RIN="-i ${POD5[$d]} -r"; else RIN="-i ${POD5[$d]}"; fi
-        [ -s $T/calls.tsv ] || rockfish inference $RIN --bam_path $D/sub.bam --model_path $RF_MODEL -d 0 -t 8 -b 512 -o $T/calls.tsv > $T/infer.log 2>&1 \
+        # Rockfish walks every read of the pod5 input (~20 reads/s on CPU), so the pod5 is first cut down to the reads of sub.bam
+        if [ ! -s $T/sub.pod5 ]; then
+            $SAM view $D/sub.bam | cut -f1 | sort -u > $T/ids.txt
+            if [ -d ${POD5[$d]} ]; then PIN="-r ${POD5[$d]}"; else PIN="${POD5[$d]}"; fi
+            pod5 filter --ids $T/ids.txt --output $T/sub.pod5 --missing-ok --duplicate-ok -t 8 $PIN > $T/pod5_filter.log 2>&1 || { rm -f $T/sub.pod5; echo "pod5 filter failed: $(tail -1 $T/pod5_filter.log)" > $T/FAILED; exit 1; }
+        fi
+        [ -s $T/calls.tsv ] || rockfish inference -i $T/sub.pod5 --bam_path $D/sub.bam --model_path $RF_MODEL -d 0 -t 8 -b 512 -o $T/calls.tsv > $T/infer.log 2>&1 \
             || { echo "rockfish inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }
-        eval "$ENVACT"; python $HERE/sites_std.py --tool rockfish $T/calls.tsv $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
+        eval "$ENVACT"; python $HERE/sites_std.py --tool rockfish --bam $D/sub.bam --offset ${RF_OFFSET:-0} $T/calls.tsv $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
     *)  echo "unknown tool $t" > $T/FAILED; exit 1 ;;
     esac
     echo "$t on $d finished $(date): $(wc -l < $T/sites.std.tsv) site rows" ;;
