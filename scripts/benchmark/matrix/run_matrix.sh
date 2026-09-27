@@ -11,7 +11,8 @@
 #   MODE=status                                    # queue, what finished, the grid
 #   MODE=audit                                     # reads seen by each finished tool vs reads in the subset (catches truncated outputs)
 #   FORCE=1 with prep or infer redoes a finished sample / tool (prep also re-applies the pod5 read filter)
-# Tools: unimeth_5mC (all-context model), unimeth_6mA, unimeth_5hmU (fine-tuned, patched clone), deepmod2 (CpG),
+#   PART=cbcb submits to the lab partition (qos high, any GPU) instead of scavenger
+# Tools: unimeth_5mC (all-context model), unimeth_6mA, unimeth_5hmU / unimeth_5hmC / unimeth_4mC (fine-tuned, patched clone), deepmod2 (CpG),
 # rockfish (CpG; wired once its output format is known). Plant/human samples reuse the sub.bam, UniMeth 5mC and
 # DeepMod2 outputs already produced under $EUK by run_catalog_rows.sh (datasets.tsv `reuse`).
 set -uo pipefail
@@ -25,11 +26,13 @@ UM_HMU=$ME/Unimeth_5hmU                                   # patched clone ([5hmU
 MODELS=$ME/unimeth_models/checkpoints
 M_5mC=$MODELS/unimeth_r10.4.1_5kHz_5mC.pt; M_6mA=$MODELS/unimeth_r10.4.1_5kHz_6mA.pt
 M_5hmU=${M_5hmU:-$ME/unimeth_5hmU/runs/hmu_0922_1446_from1000_from1500/final.pt}     # the 3,000-step model (0.7725 held out)
+M_5hmC=${M_5hmC:-$ME/unimeth_ft/5hmC/runs/latest/final.pt}; M_4mC=${M_4mC:-$ME/unimeth_ft/4mC/runs/latest/final.pt}   # unimeth_finetune/run.sh
 DORADO=/fs/cbcb-lab/storm/shared/rawhash2/basecallers/dorado-1.4.0-linux-x64/bin/dorado; DMODEL=$ME/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0
 RF_ENV=$ME/envs/rockfish; RF_MODEL=${RF_MODEL:-$ME/rockfish_bench/models/rf_5kHz.ckpt}; RF_ORIENT=${RF_ORIENT:-read}; RF_SHIFT=${RF_SHIFT:-0}   # Rockfish positions index the read as sequenced (M.SssI check, Sep 26): plus calls land on the C, minus calls on the G = the minus-strand C
 DM2_ENV=$ME/envs/deepmod2; DM2_SRC=$ME/deepmod2_bench/DeepMod2; DM2_MODEL=${DM2_MODEL:-bilstm_r10.4.1_5khz_v5.0}
 SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="--gres=gpu:rtxa5000:1"
 CPU="--account=cbcb --partition=cbcb --qos=high"
+[ "${PART:-}" = cbcb ] && { SB="--account=cbcb --partition=cbcb --qos=high"; GPU="--gres=gpu:1"; }   # PART=cbcb: lab partition instead of scavenger
 MODE=${MODE:-status}
 
 # ---- tables -> bash arrays (paths expanded by matrix_common.py so both sides read them the same way)
@@ -118,12 +121,12 @@ status)
     for d in $DS; do
         printf "%-12s %-5s" $d "$([ -s $W/$d/status/prep.done ] && echo ok || echo -)"
         for t in $TOOLS; do
-            if [ -s $W/$d/$t/sites.std.tsv ]; then s=ok; elif [ -s $W/$d/$t/FAILED ]; then s=FAILED; elif [ -n "$(dep infer:$t:$d)" ]; then s=queued; else s=-; fi
+            if [ -s $W/$d/$t/sites.std.tsv ]; then s=ok; elif [ -n "$(dep infer:$t:$d)" ]; then s=queued; elif [ -s $W/$d/$t/FAILED ]; then s=FAILED; else s=-; fi
             printf " %-13s" $s
         done; echo
     done
     [ -s $W/matrix_grid.tsv ] && { echo; echo "== grid (AUROC; mean P for UniMeth, call frequency otherwise)"; column -t -s $'\t' $W/matrix_grid.tsv; }
-    for d in $DS; do for t in $TOOLS; do [ -s $W/$d/$t/FAILED ] && echo "FAILED $t on $d: $(cat $W/$d/$t/FAILED)"; done; done; true ;;
+    for d in $DS; do for t in $TOOLS; do [ -s $W/$d/$t/FAILED ] && [ -z "$(dep infer:$t:$d)" ] && echo "FAILED $t on $d: $(cat $W/$d/$t/FAILED)"; done; done; true ;;
 
 # ---------------------------------------------------------------- job bodies (run inside sbatch)
 _prep)
@@ -162,13 +165,14 @@ _infer)
     [ -s $D/sub.bam ] || { echo "prep outputs missing" > $T/FAILED; exit 1; }
     RU=${REUSE[$d]}
     case $t in
-    unimeth_5mC|unimeth_6mA|unimeth_5hmU)
+    unimeth_5mC|unimeth_6mA|unimeth_5hmU|unimeth_5hmC|unimeth_4mC)
         eval "$ENVACT"
         case $t in
             unimeth_5mC)  M=$M_5mC;  FLAGS="--cpg 1 --chg 1 --chh 1"; TYPES='[CpG],[CHG],[CHH]'; CMD="unimeth-infer"
                           [ "$RU" != "-" ] && [ -s $EUK/$RU/unimeth/calls.txt ] && [ ! -s $T/calls.txt ] && ln -sf $EUK/$RU/unimeth/calls.txt $T/calls.txt ;;
             unimeth_6mA)  M=$M_6mA;  FLAGS="--cpg 0 --chg 0 --chh 0 --m6A 1"; TYPES='[m6A]'; CMD="unimeth-infer" ;;
             unimeth_5hmU) M=$M_5hmU; FLAGS="--cpg 0 --chg 0 --chh 0 --hmU 1"; TYPES='[5hmU]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_HMU ;;
+            unimeth_5hmC|unimeth_4mC) M=$( [ $t = unimeth_5hmC ] && echo $M_5hmC || echo $M_4mC ); FLAGS="--cpg 1 --chg 1 --chh 1"; TYPES='[CpG],[CHG],[CHH]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_HMU ;;   # fine-tuned all-context C models
         esac
         [ -s $M ] || { echo "model missing: $M" > $T/FAILED; exit 1; }
         [ -s $T/calls.txt ] || { rm -f $T/part.txt; $CMD --pod5 ${POD5[$d]} --bam $D/sub.bam --model $M --pore_type R10.4.1 --frequency 4khz $FLAGS --output_format tsv --out $T/part.txt --num_workers 8 --signal_index $T/signal-index.sqlite > $T/infer.log 2>&1 \
