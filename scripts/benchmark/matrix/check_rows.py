@@ -7,7 +7,9 @@ import argparse, os, shutil, sys, traceback
 from matrix_common import load_datasets, load_rows
 ap = argparse.ArgumentParser(); ap.add_argument("--datasets", required=True); ap.add_argument("--rows", required=True)
 ap.add_argument("--work", required=True); ap.add_argument("--euk", default=os.environ.get("EUK", "/fs/cbcb-lab/storm/vgandhi/euk"))
-ap.add_argument("--sample", type=int, default=5000); a = ap.parse_args()
+ap.add_argument("--sample", type=int, default=5000)
+ap.add_argument("--detail", default="", help="row id: per-file base composition and sequence context of off-base positions")
+a = ap.parse_args()
 try:
     import pysam
 except ImportError:
@@ -72,6 +74,19 @@ for r in rows:
                 else: files[col].append(p)
         if pysam and pos_ds and r["base"] != "N" and os.path.exists(pos_ds["ref"]):
             fa = pysam.FastaFile(indexed_ref(pos_ds)); refs = set(fa.references); cache = {}
+            if a.detail == r["row"]:
+                for col in ("gt", "cand"):
+                    for p in files[col]:
+                        comp = {}; off = []; n = 0
+                        for line in open(p):
+                            c = line.split()
+                            if len(c) < 2 or c[0].startswith("#") or c[0] not in refs: continue
+                            s_ = cache.get(c[0])
+                            if s_ is None: s_ = cache[c[0]] = fa.fetch(c[0]).upper()
+                            q = int(c[1]); n += 1; b = s_[q] if 0 <= q < len(s_) else "?"; comp[b] = comp.get(b, 0) + 1
+                            if b not in (r["base"], COMP[r["base"]]) and len(off) < 12: off.append((c[0], q, s_[max(0, q - 5):q] + "[" + b + "]" + s_[q + 1:q + 6], line.strip()))
+                        print(f"  DETAIL {col} {os.path.basename(p)}: {n:,} positions, bases {dict(sorted(comp.items()))}")
+                        for ctg, q, ctx, raw in off: print(f"      {ctg}:{q}  {ctx}   line: {raw[:60]}")
             for col in ("gt", "cand"):
                 if not files[col]: continue
                 n = ok = ncol = unknown = 0

@@ -24,6 +24,7 @@ MODELS=$ME/unimeth_models/checkpoints
 M_5mC=$MODELS/unimeth_r10.4.1_5kHz_5mC.pt; M_6mA=$MODELS/unimeth_r10.4.1_5kHz_6mA.pt
 M_5hmU=${M_5hmU:-$ME/unimeth_5hmU/runs/hmu_0922_1446_from1000_from1500/final.pt}     # the 3,000-step model (0.7725 held out)
 DORADO=/fs/cbcb-lab/storm/shared/rawhash2/basecallers/dorado-1.4.0-linux-x64/bin/dorado; DMODEL=$ME/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0
+RF_ENV=$ME/envs/rockfish; RF_MODEL=${RF_MODEL:-$ME/rockfish_bench/models/rf_5kHz.ckpt}
 DM2_ENV=$ME/envs/deepmod2; DM2_SRC=$ME/deepmod2_bench/DeepMod2; DM2_MODEL=${DM2_MODEL:-bilstm_r10.4.1_5khz_v5.0}
 SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="--gres=gpu:rtxa5000:1"
 CPU="--account=cbcb --partition=cbcb --qos=high"
@@ -49,7 +50,7 @@ has_moves() { [ $($SAM view $1 2>/dev/null | head -200 | grep -c 'mv:B') -gt 0 ]
 
 case $MODE in
 check)
-    eval "$ENVACT" 2>/dev/null; python $HERE/check_rows.py --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --work $W --euk $EUK ;;
+    eval "$ENVACT" 2>/dev/null; python $HERE/check_rows.py --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --work $W --euk $EUK ${DETAIL:+--detail $DETAIL} ;;
 
 basecall)   # GPU: Dorado sup v5 with --emit-moves, for samples whose collection BAM has no move tables (the oligo set)
     for d in $DS; do
@@ -153,7 +154,12 @@ _infer)
             || { echo "deepmod2 detect failed: $(grep -iE 'error|exception' $T/detect.log | tail -1)" > $T/FAILED; exit 1; }
         eval "$ENVACT"; python $HERE/sites_std.py --tool deepmod2 $T/calls $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
     rockfish)
-        echo "rockfish: not wired yet (needs the smoke-test output format)" > $T/FAILED; exit 1 ;;
+        source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $RF_ENV
+        [ -s $RF_MODEL ] || { echo "model missing: $RF_MODEL" > $T/FAILED; exit 1; }
+        if [ -d ${POD5[$d]} ]; then RIN="-i ${POD5[$d]} -r"; else RIN="-i ${POD5[$d]}"; fi
+        [ -s $T/calls.tsv ] || rockfish inference $RIN --bam_path $D/sub.bam --model_path $RF_MODEL -d 0 -t 8 -b 512 -o $T/calls.tsv > $T/infer.log 2>&1 \
+            || { echo "rockfish inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }
+        eval "$ENVACT"; python $HERE/sites_std.py --tool rockfish $T/calls.tsv $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
     *)  echo "unknown tool $t" > $T/FAILED; exit 1 ;;
     esac
     echo "$t on $d finished $(date): $(wc -l < $T/sites.std.tsv) site rows" ;;

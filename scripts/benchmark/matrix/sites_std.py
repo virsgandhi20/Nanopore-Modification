@@ -51,4 +51,28 @@ elif a.tool == "deepmod2":
             fo.write(f"{c[0]}\t{c[1]}\t{c[2]}\t{c[3]}\t{c[3]}\n"); n_out += 1
     os.remove(tmp); print(f"sites_std deepmod2: {n_out:,} site rows ({r.stdout.strip()})")
 else:
-    sys.exit("sites_std rockfish: output format not wired yet (run the smoke test in rockfish_setup.sh and paste its output)")
+    # Rockfish per-read TSV (r10.4.1 branch): read_id  contig  pos  score, one line per read and CpG; the score is a
+    # probability, or a logit with -l (values outside [0,1] are passed through a sigmoid). No strand column: the
+    # position is the reference C of the CpG on the read's strand, so + and - land on adjacent positions.
+    import math
+    acc = {}; n_in = 0; ncols = None
+    with open(a.src) as f:
+        for line in f:
+            c = line.rstrip("\n").split("\t")
+            if ncols is None:
+                ncols = len(c)
+                if ncols < 4: sys.exit(f"sites_std rockfish: expected >= 4 tab-separated columns (read_id, contig, pos, score), got {ncols}: {line.strip()[:80]}")
+                try: float(c[3])
+                except ValueError: continue                       # header line
+            try:
+                pos = int(c[2]); p = float(c[3])
+            except ValueError:
+                continue
+            if p < 0 or p > 1: p = 1 / (1 + math.exp(-p))
+            k = (c[1], pos); v = acc.get(k); n_in += 1
+            if v is None: acc[k] = [1, p, 1 if p > 0.5 else 0]
+            else: v[0] += 1; v[1] += p; v[2] += 1 if p > 0.5 else 0
+    with open(a.out, "w") as fo:
+        for (chrom, pos), (n, ps, nc) in sorted(acc.items()):
+            fo.write(f"{chrom}\t{pos}\t{n}\t{nc / n:.6f}\t{ps / n:.6f}\n"); n_out += 1
+    print(f"sites_std rockfish: {n_in:,} per-read calls -> {n_out:,} site rows")
