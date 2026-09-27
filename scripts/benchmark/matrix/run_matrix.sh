@@ -81,7 +81,7 @@ infer)
             *)        RES="--cpus-per-task=8 --mem=48G" ;;
         esac
         J=$(sub $(dep prep:$d) $GPU $RES --time=08:00:00 --job-name=mtx_${t}_$d --output=$W/logs/${t}_${d}_%j.log \
-              --wrap="MODE=_infer DSID=$d TOOL=$t WBASE=$W bash $HERE/run_matrix.sh")
+              --wrap="MODE=_infer DSID=$d TOOL=$t WBASE=$W RF_OFFSET=$RF_OFFSET bash $HERE/run_matrix.sh")
         [ -n "$J" ] && { record infer:$t:$d $J; echo "$t on $d: job $J $(dep prep:$d)"; }
     done; done ;;
 
