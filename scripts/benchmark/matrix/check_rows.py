@@ -106,6 +106,23 @@ for r in rows:
                 flag = "" if frac >= 0.95 else "   <-- CHECK: positions are not on the expected base (1-based file? wrong strand?)"
                 print(f"  {col} base check: {ok:,} of {n:,} sampled positions are {r['base']}/{COMP[r['base']]} ({frac:.1%}), {ncol} columns" + (f", {unknown} on contigs not in the reference" if unknown else "") + flag)
                 if frac < 0.95: bad += 1
+            if files["gt"] and files["cand"]:                       # positives outside the candidate set are never scored
+                def full(paths):
+                    S = set()
+                    for p in paths:
+                        for line in open(p):
+                            c = line.split()
+                            if len(c) >= 2 and not c[0].startswith("#"): S.add((c[0], int(c[1])))
+                    return S
+                G = full(files["gt"]); Cd = full(files["cand"]); out = G - Cd
+                print(f"  gt vs cand: {len(G):,} positives, {len(Cd):,} candidates, {len(out):,} positives NOT in the candidate set" + ("   <-- CHECK: those positives cannot be scored by any tool" if out else ""))
+                if out:
+                    comp = {}
+                    for ctg, q in list(out)[:20000]:
+                        s_ = cache.get(ctg)
+                        if s_ is None and ctg in refs: s_ = cache[ctg] = fa.fetch(ctg).upper()
+                        b = s_[q] if s_ and 0 <= q < len(s_) else "?"; comp[b] = comp.get(b, 0) + 1
+                    print(f"    bases of the positives outside the candidates: {dict(sorted(comp.items()))}"); bad += 1
     except Exception:
         problem("check crashed: " + traceback.format_exc().strip().splitlines()[-1])
 print(f"== {bad} problem(s)" if bad else "== all paths present, ground truth on the expected bases")

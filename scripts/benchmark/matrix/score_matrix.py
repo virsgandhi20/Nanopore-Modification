@@ -90,7 +90,10 @@ for r in rows:
                 sp = subprocess.run([sys.executable, splitter, "--ref", ref, "--bed", tmp, "--out-cpg", oc, "--out-noncpg", on], capture_output=True, text=True)
                 if sp.returncode != 0: sys.exit(f"split_by_context failed for {r['row']}: {sp.stderr[-300:]}")
                 S.clear(); S.update(read_positions([oc if r["context"] == "cpg" else on]))
-        cand |= gt                                                     # positives are always candidates
+        if r["cand"] != ["same"]:                                     # the scored set is the candidate set: positives = gt AND cand
+            outside = len(gt - cand)
+            if outside: log(f"[{r['row']}] {outside:,} of {len(gt):,} gt positions are not in the candidate file and are left out (e.g. M.SssI gt carries the GATC adenines)")
+            gt &= cand
         write_bed(gt, gt_bed); write_bed(cand, cand_bed)
     gt = read_positions([gt_bed]); cand_pos = read_positions([cand_bed])
     # ---- coverage floor per sample (the tools could only have called what the reads cover)
