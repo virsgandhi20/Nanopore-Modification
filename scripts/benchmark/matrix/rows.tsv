@@ -5,12 +5,14 @@
 # cand "same" = the gt positions; "refbase:T" = every position whose reference base is T on either strand. context:
 # all | cpg | noncpg (split with the dataset's reference). mincov = coverage floor; only candidate positions covered
 # by >= mincov reads of sub.bam are scored, and among those, positions the tool never scored count as unmodified (0).
+# NOTE (Sep 27): the collection's candidate.bed / cand_*.bed files for the BACTERIA hold only the positives (no
+# negatives), so bacterial rows use refbase:<B>: every covered position of the modified base is a candidate.
 #row	chem	base	type	datasets	context	gt	cand	mincov	note
-ecoli_dam_6mA	6mA	A	one	ecoli_wt	all	by_enzyme/dam/gt_modified_plus.bed,by_enzyme/dam/gt_modified_minus.bed	by_enzyme/dam/candidate.bed	10	GATC preset, confirmed by callers (97%)
-ecoli_dcm_5mC	5mC	C	one	ecoli_wt	noncpg	by_enzyme/dcm/gt_modified_plus.bed,by_enzyme/dcm/gt_modified_minus.bed	by_enzyme/dcm/candidate.bed	10	CCWGG preset
-ecoli_mssi_5mC	5mC	C	one	ecoli_mssi	cpg	gt_plus.bed,gt_minus.bed	candidate.bed	10	M.SssI, every CpG
-anabaena_6mA	6mA	A	one	anabaena	all	gt_plus.bed,gt_minus.bed	candidate.bed	10	GATC preset, confirmed
-tdenticola_6mA	6mA	A	one	tdenticola	all	gt_plus.bed,gt_minus.bed	candidate.bed	10	preset sites unmethylated per two callers (Sep 20 post); scored as-is, flagged in the consistency report
+ecoli_dam_6mA	6mA	A	one	ecoli_wt	all	by_enzyme/dam/gt_modified_plus.bed,by_enzyme/dam/gt_modified_minus.bed	refbase:A	10	GATC preset, confirmed by callers (97%); the collection's candidate.bed holds only the positives, so negatives = every other covered A
+ecoli_dcm_5mC	5mC	C	one	ecoli_wt	noncpg	by_enzyme/dcm/gt_modified_plus.bed,by_enzyme/dcm/gt_modified_minus.bed	refbase:C	10	CCWGG preset; negatives = every other covered non-CpG C
+ecoli_mssi_5mC	5mC	C	one	ecoli_mssi	cpg	gt_plus.bed,gt_minus.bed	refbase:C	10	M.SssI, every CpG; gt file also lists the GATC adenines (dropped by the base restriction); negatives = every other covered CpG C, i.e. nearly none
+anabaena_6mA	6mA	A	one	anabaena	all	gt_plus.bed,gt_minus.bed	refbase:A	10	GATC preset, confirmed; negatives = every other covered A
+tdenticola_6mA	6mA	A	one	tdenticola	all	gt_plus.bed,gt_minus.bed	refbase:A	10	preset sites unmethylated per two callers (Sep 20 post); scored as-is, flagged in the consistency report; negatives = every other covered A
 hp26695_mod	mixed	N	two	hp26695,hp26695_wga	all	gt_modified_plus.bed,gt_modified_minus.bed	same	10	collection convention: WT positives vs the WGA sample at the same positions (candidate.bed holds only the positives, so the negatives must be the WGA reads)
 hpj99_4mC	4mC	C	one	hpj99	all	motif:TCNNNNNNNGC:1:both	refbase:C	10	HpyAIV preset (sheet row 17); Dorado 4mC at chance on it, GT to be checked; negatives = every other covered C
 hp26695_6mA	6mA	A	one	hp26695	all	${ME}/hp_labels/gt_6mA.bed	refbase:A	10	WT vs WGA differential GT (Vir, Sep 20), sheet row 21; negatives = every other covered A
