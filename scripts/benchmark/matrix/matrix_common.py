@@ -26,7 +26,7 @@ def load_rows(path, datasets=None):
             out = []
             for p in spec.split(","):
                 p = expand(p.strip())
-                if p == "same" or p.startswith("refbase:") or os.path.isabs(p) or gtdir is None: out.append(p)
+                if p == "same" or p.startswith(("refbase:", "motif:")) or os.path.isabs(p) or gtdir is None: out.append(p)
                 else: out.append(os.path.join(gtdir, p))
             return out
         r["gt"] = paths(c[6]); r["cand"] = paths(c[7]); rows.append(r)
