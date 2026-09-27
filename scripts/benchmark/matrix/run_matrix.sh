@@ -9,6 +9,7 @@
 #   MODE=score                                     # CPU job: score_matrix.py over everything that has finished
 #   MODE=all                                       # prep + infer for every sample and tool, then score
 #   MODE=status                                    # queue, what finished, the grid
+#   MODE=audit                                     # reads seen by each finished tool vs reads in the subset (catches truncated outputs)
 #   FORCE=1 with prep or infer redoes a finished sample / tool (prep also re-applies the pod5 read filter)
 # Tools: unimeth_5mC (all-context model), unimeth_6mA, unimeth_5hmU (fine-tuned, patched clone), deepmod2 (CpG),
 # rockfish (CpG; wired once its output format is known). Plant/human samples reuse the sub.bam, UniMeth 5mC and
@@ -96,6 +97,21 @@ score)
 all)
     MODE=prep bash $HERE/run_matrix.sh; MODE=infer TOOLS="$TOOLS" DS="$DS" bash $HERE/run_matrix.sh; MODE=score TOOLS="$TOOLS" DS="$DS" bash $HERE/run_matrix.sh ;;
 
+audit)   # reads seen by each finished tool vs reads in the subset: a cell far below 100% is a truncated output (preempted job)
+    printf "%-12s %8s" sample reads; for t in $TOOLS; do printf " %-13s" $t; done; echo
+    for d in $DS; do
+        [ -s $W/$d/sub.bam ] || continue; nb=$($SAM view $W/$d/sub.bam | cut -f1 | sort -u | wc -l); printf "%-12s %8s" $d $nb
+        for t in $TOOLS; do
+            if [ ! -s $W/$d/$t/sites.std.tsv ]; then s=-
+            else case $t in
+                unimeth_*) n=$(cut -f5 $W/$d/$t/calls.txt | sort -u | wc -l);;
+                rockfish)  n=$(cut -f1 $W/$d/$t/calls.tsv | sort -u | wc -l);;
+                deepmod2)  n=$(cat $W/$d/$t/calls/*per_read* 2>/dev/null | cut -f1 | sort -u | wc -l);;
+                *) n=0;; esac; s="$n ($((100 * n / (nb > 0 ? nb : 1)))%)"; fi
+            printf " %-13s" "$s"
+        done; echo
+    done ;;
+
 status)
     squeue -u $USER -o "%.9i %.28j %.3t %.9M %R" | grep -E "mtx_|JOBID"; echo
     printf "%-12s %-5s" sample prep; for t in $TOOLS; do printf " %-13s" $t; done; echo
@@ -155,14 +171,14 @@ _infer)
             unimeth_5hmU) M=$M_5hmU; FLAGS="--cpg 0 --chg 0 --chh 0 --hmU 1"; TYPES='[5hmU]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_HMU ;;
         esac
         [ -s $M ] || { echo "model missing: $M" > $T/FAILED; exit 1; }
-        [ -s $T/calls.txt ] || $CMD --pod5 ${POD5[$d]} --bam $D/sub.bam --model $M --pore_type R10.4.1 --frequency 4khz $FLAGS --output_format tsv --out $T/calls.txt --num_workers 8 --signal_index $T/signal-index.sqlite > $T/infer.log 2>&1 \
-            || { echo "inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }
+        [ -s $T/calls.txt ] || { rm -f $T/part.txt; $CMD --pod5 ${POD5[$d]} --bam $D/sub.bam --model $M --pore_type R10.4.1 --frequency 4khz $FLAGS --output_format tsv --out $T/part.txt --num_workers 8 --signal_index $T/signal-index.sqlite > $T/infer.log 2>&1 \
+            && mv $T/part.txt $T/calls.txt || { echo "inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }; }
         python $HERE/sites_std.py --tool unimeth --types "$TYPES" $T/calls.txt $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
     deepmod2)
         if [ "$RU" != "-" ] && ls $EUK/$RU/deepmod2/calls/*per_site* > /dev/null 2>&1 && [ ! -d $T/calls ]; then ln -sfn $EUK/$RU/deepmod2/calls $T/calls; fi
         if big_ref $d; then TH=4; else TH=12; fi
-        ls $T/calls/*per_site* > /dev/null 2>&1 || $DM2_ENV/bin/python $DM2_SRC/deepmod2 detect --bam $D/sub.bam --input ${POD5[$d]} --file_type pod5 --model $DM2_MODEL --seq_type dna --ref $D/ref.fa --threads $TH --output $T/calls > $T/detect.log 2>&1 \
-            || { echo "deepmod2 detect failed: $(grep -iE 'error|exception' $T/detect.log | tail -1)" > $T/FAILED; exit 1; }
+        ls $T/calls/*per_site* > /dev/null 2>&1 || { rm -rf $T/calls.part; $DM2_ENV/bin/python $DM2_SRC/deepmod2 detect --bam $D/sub.bam --input ${POD5[$d]} --file_type pod5 --model $DM2_MODEL --seq_type dna --ref $D/ref.fa --threads $TH --output $T/calls.part > $T/detect.log 2>&1 \
+            && mv $T/calls.part $T/calls || { echo "deepmod2 detect failed: $(grep -iE 'error|exception' $T/detect.log | tail -1)" > $T/FAILED; exit 1; }; }
         eval "$ENVACT"; python $HERE/sites_std.py --tool deepmod2 $T/calls $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
     rockfish)
         source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $RF_ENV
@@ -174,8 +190,8 @@ _infer)
             PFOPT=""; pod5 filter --help 2>/dev/null | grep -q -- "--missing-ok" && PFOPT="--missing-ok"      # flag names differ between pod5 versions
             pod5 filter --ids $T/ids.txt --output $T/sub.pod5 $PFOPT -t 8 $PIN > $T/pod5_filter.log 2>&1 || { rm -f $T/sub.pod5; echo "pod5 filter failed: $(tail -1 $T/pod5_filter.log)" > $T/FAILED; exit 1; }
         fi
-        [ -s $T/calls.tsv ] || rockfish inference -i $T/sub.pod5 --bam_path $D/sub.bam --model_path $RF_MODEL -d 0 -t 8 -b 512 -o $T/calls.tsv > $T/infer.log 2>&1 \
-            || { echo "rockfish inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }
+        [ -s $T/calls.tsv ] || { rm -f $T/part.tsv; rockfish inference -i $T/sub.pod5 --bam_path $D/sub.bam --model_path $RF_MODEL -d 0 -t 8 -b 512 -o $T/part.tsv > $T/infer.log 2>&1 \
+            && mv $T/part.tsv $T/calls.tsv || { echo "rockfish inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }; }
         eval "$ENVACT"; python $HERE/sites_std.py --tool rockfish --bam $D/sub.bam --orient $RF_ORIENT --minus-shift $RF_SHIFT $T/calls.tsv $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
     *)  echo "unknown tool $t" > $T/FAILED; exit 1 ;;
     esac
@@ -184,5 +200,5 @@ _infer)
 _score)
     eval "$ENVACT"; python $HERE/score_matrix.py --work $W --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --tools "$TOOLS" --repo $REPO --samtools $SAM 2>&1 | tee $W/status/score.txt ;;
 
-*)  echo "MODE must be check | basecall | prep | infer | score | all | status"; exit 1 ;;
+*)  echo "MODE must be check | basecall | prep | infer | score | audit | all | status"; exit 1 ;;
 esac
