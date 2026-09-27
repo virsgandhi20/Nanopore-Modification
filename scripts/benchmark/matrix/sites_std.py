@@ -7,15 +7,17 @@ One line per position (and per strand where the tool reports strands; score_site
       rows of other types are dropped (a 5mC model asked for CpG/CHG/CHH may still emit nothing else, but a
       patched clone can carry [5hmU] and CpG rows in one file). call_freq = fraction of reads with prob_1 > 0.5.
   sites_std.py --tool deepmod2  <deepmod2 output dir>  <out.tsv>      (via deepmod2_sites.py; mean_P = call_freq)
-  sites_std.py --tool rockfish --bam <sub.bam> [--offset 0|-1]  <rockfish out>  <out.tsv>
-      per-read TSV (read_id, pos, prob; no contig): the contig and strand come from the read's primary alignment
-      in the BAM; --offset -1 if the positions turn out 1-based (rockfish_pos_check.py).
+  sites_std.py --tool rockfish --bam <sub.bam> [--orient bam|read] [--minus-shift N]  <rockfish out>  <out.tsv>
+      per-read TSV (read_id, pos, prob; no contig; pos indexes the read): every call is projected onto the
+      reference through the read's primary alignment (rockfish_pos_check.py picks --orient).
 """
 import argparse, os, subprocess, sys
 ap = argparse.ArgumentParser()
 ap.add_argument("--tool", required=True, choices=["unimeth", "deepmod2", "rockfish"])
 ap.add_argument("--types", default="", help="unimeth: comma-separated mod tokens to keep, e.g. '[m6A]'")
-ap.add_argument("--bam", default=None, help="rockfish: BAM giving each read's contig and strand"); ap.add_argument("--offset", type=int, default=0)
+ap.add_argument("--bam", default=None, help="rockfish: BAM with the reads' primary alignments")
+ap.add_argument("--orient", default="bam", choices=["bam", "read"], help="rockfish: what the read position indexes (rockfish_pos_check.py)")
+ap.add_argument("--minus-shift", type=int, default=0, help="rockfish: add to the projected position of minus-read calls")
 ap.add_argument("src"); ap.add_argument("out")
 a = ap.parse_args()
 n_out = 0
@@ -54,31 +56,45 @@ elif a.tool == "deepmod2":
             fo.write(f"{c[0]}\t{c[1]}\t{c[2]}\t{c[3]}\t{c[3]}\n"); n_out += 1
     os.remove(tmp); print(f"sites_std deepmod2: {n_out:,} site rows ({r.stdout.strip()})")
 else:
-    # Rockfish per-read TSV (r10.4.1 branch): read_id, pos, prob, one line per read and CpG, no contig column. The
-    # contig and strand are taken from the read's primary alignment in the BAM; --offset shifts the position
-    # (-1 for a 1-based file). Values outside [0,1] (the -l logits) go through a sigmoid.
+    # Rockfish per-read TSV (r10.4.1 branch): read_id, pos, prob, one line per read and CpG, no contig. pos indexes the
+    # READ (rockfish_pos_check.py): it is projected onto the reference through the read's primary alignment.
+    # --orient bam: pos indexes the BAM SEQ; read: pos indexes the read as sequenced (minus reads: L-1-pos).
+    # --minus-shift moves minus-read calls (e.g. +1 when they land on the plus C but should sit on the minus C = the G).
     import math
+    import numpy as np
     if not a.bam: sys.exit("sites_std rockfish: --bam <sub.bam> is required (the output has no contig column)")
     import pysam
     aln = {}
     with pysam.AlignmentFile(a.bam, "rb", check_sq=False) as b:
         for r in b.fetch(until_eof=True):
             if r.is_unmapped or r.is_secondary or r.is_supplementary: continue
-            aln[r.query_name] = (r.reference_name, "-" if r.is_reverse else "+")
-    acc = {}; n_in = n_miss = 0
+            aln[r.query_name] = r
+    q2r = {}
+    def proj(r):
+        m = q2r.get(r.query_name)
+        if m is None:
+            m = np.full(r.query_length, -1, dtype=np.int64)
+            for qq, pp in r.get_aligned_pairs(matches_only=True): m[qq] = pp
+            q2r[r.query_name] = m
+        return m
+    acc = {}; n_in = n_miss = n_unal = 0
     with open(a.src) as f:
         for line in f:
             c = line.split()
             if len(c) < 3 or c[0] == "read_id": continue
-            al = aln.get(c[0])
-            if al is None: n_miss += 1; continue
-            try: pos = int(c[1]) + a.offset; p = float(c[2])
+            r = aln.get(c[0])
+            if r is None: n_miss += 1; continue
+            try: p = int(c[1]); pr = float(c[2])
             except ValueError: continue
-            if p < 0 or p > 1: p = 1 / (1 + math.exp(-p))
-            k = (al[0], pos, al[1]); v = acc.get(k); n_in += 1
-            if v is None: acc[k] = [1, p, 1 if p > 0.5 else 0]
-            else: v[0] += 1; v[1] += p; v[2] += 1 if p > 0.5 else 0
+            if pr < 0 or pr > 1: pr = 1 / (1 + math.exp(-pr))
+            q = (r.query_length - 1 - p) if (a.orient == "read" and r.is_reverse) else p
+            m = proj(r)
+            if not (0 <= q < len(m)) or m[q] < 0: n_unal += 1; continue
+            pos = int(m[q]) + (a.minus_shift if r.is_reverse else 0); strand = "-" if r.is_reverse else "+"
+            k = (r.reference_name, pos, strand); v = acc.get(k); n_in += 1
+            if v is None: acc[k] = [1, pr, 1 if pr > 0.5 else 0]
+            else: v[0] += 1; v[1] += pr; v[2] += 1 if pr > 0.5 else 0
     with open(a.out, "w") as fo:
         for (chrom, pos, strand), (n, ps, nc) in sorted(acc.items()):
             fo.write(f"{chrom}\t{pos}\t{n}\t{nc / n:.6f}\t{ps / n:.6f}\n"); n_out += 1
-    print(f"sites_std rockfish: {n_in:,} per-read calls joined to the BAM ({n_miss:,} reads not in it), {len(aln):,} primary alignments -> {n_out:,} site/strand rows")
+    print(f"sites_std rockfish: {n_in:,} calls projected ({n_miss:,} from reads not in the BAM, {n_unal:,} on unaligned bases), {len(aln):,} primary alignments -> {n_out:,} site/strand rows")
