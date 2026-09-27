@@ -24,7 +24,7 @@ MODELS=$ME/unimeth_models/checkpoints
 M_5mC=$MODELS/unimeth_r10.4.1_5kHz_5mC.pt; M_6mA=$MODELS/unimeth_r10.4.1_5kHz_6mA.pt
 M_5hmU=${M_5hmU:-$ME/unimeth_5hmU/runs/hmu_0922_1446_from1000_from1500/final.pt}     # the 3,000-step model (0.7725 held out)
 DORADO=/fs/cbcb-lab/storm/shared/rawhash2/basecallers/dorado-1.4.0-linux-x64/bin/dorado; DMODEL=$ME/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0
-RF_ENV=$ME/envs/rockfish; RF_MODEL=${RF_MODEL:-$ME/rockfish_bench/models/rf_5kHz.ckpt}; RF_ORIENT=${RF_ORIENT:-bam}; RF_SHIFT=${RF_SHIFT:-0}   # what Rockfish's read position indexes and the minus-read shift (rockfish_pos_check.py)
+RF_ENV=$ME/envs/rockfish; RF_MODEL=${RF_MODEL:-$ME/rockfish_bench/models/rf_5kHz.ckpt}; RF_ORIENT=${RF_ORIENT:-read}; RF_SHIFT=${RF_SHIFT:-0}   # Rockfish positions index the read as sequenced (M.SssI check, Sep 26): plus calls land on the C, minus calls on the G = the minus-strand C
 DM2_ENV=$ME/envs/deepmod2; DM2_SRC=$ME/deepmod2_bench/DeepMod2; DM2_MODEL=${DM2_MODEL:-bilstm_r10.4.1_5khz_v5.0}
 SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="--gres=gpu:rtxa5000:1"
 CPU="--account=cbcb --partition=cbcb --qos=high"
