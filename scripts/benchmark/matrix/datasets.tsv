@@ -1,7 +1,8 @@
 # Every sample the matrix runs a tool on. Paths may use ${CAT} (lab data collection), ${EUK} (Vir's plant/human work
 # dir), ${UMBC} (SPO1 share), ${ME} (scratch). gtdir = where a row's relative gt/cand files live. nreads = first N
 # alignments of the coordinate-sorted BAM (0 = every read). reuse = a folder under ${EUK} whose sub.bam / UniMeth 5mC /
-# DeepMod2 outputs are linked instead of recomputed (the plant/human rows already ran there).
+# DeepMod2 outputs are linked instead of recomputed (the plant/human rows already ran there). A BAM without move
+# tables (mv tags) is re-basecalled from the pod5 with --emit-moves by MODE=basecall (prep submits it when needed).
 #id	gtdir	pod5	bam	ref	nreads	reuse
 ecoli_wt	${CAT}/ecoli_k12_wt_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/ecoli_k12_wt_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/ecoli_k12_wt_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/ecoli_k12_wt_r10.4.1_ontbasemod_2024/ref.fa	15000	-
 ecoli_mssi	${CAT}/ecoli_k12_damdcm_mssi_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/ecoli_k12_damdcm_mssi_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/ecoli_k12_damdcm_mssi_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/ecoli_k12_damdcm_mssi_r10.4.1_ontbasemod_2024/ref.fa	15000	-
@@ -12,9 +13,9 @@ hpj99	${CAT}/hpylori_j99_wt_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/hpylori_
 arabidopsis	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/ref.fa	15000	arabidopsis_col0_r10.4.1_ontbasemod_2024
 hg002	${CAT}/human_hg002_r10.4.1_ont_open_data/ground_truth	${CAT}/human_hg002_r10.4.1_ont_open_data/pod5_files	${CAT}/human_hg002_r10.4.1_ont_open_data/basecalled/reads.bam	${CAT}/human_hg002_r10.4.1_ont_open_data/ref.fa	15000	human_hg002_r10.4.1_ont_open_data
 rice	${EUK}/ground_truth/osativa	/fs/cbcb-lab/storm/bds062/data/benchmark/osativa/pod5	${EUK}/bam/osativa.moves.bam	${EUK}/ref/osativa.fa	15000	osativa
-syn_control	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/control_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/control/reads.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
-syn_5mC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/5mC_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5mC/reads.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
-syn_5hmC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/5hmC_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5hmC/reads.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
-syn_6mA	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/6mA_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/6mA/reads.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
+syn_control	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/control_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/control/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
+syn_5mC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/5mC_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5mC/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
+syn_5hmC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/5hmC_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5hmC/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
+syn_6mA	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/6mA_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/6mA/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
 spo1_bc07	-	${UMBC}/pod5_by_barcode/run1_jan31/single_end/barcode07.pod5	${ME}/unimeth_5hmU/bam/bc07.tagged.bam	${UMBC}/ref/SPO1_FJ230960.1.fasta	15000	-
 spo1_bc01	-	${UMBC}/pod5_by_barcode/run1_jan31/single_end/barcode01.pod5	${ME}/unimeth_5hmU/bam/bc01.tagged.bam	${UMBC}/ref/SPO1_FJ230960.1.fasta	15000	-

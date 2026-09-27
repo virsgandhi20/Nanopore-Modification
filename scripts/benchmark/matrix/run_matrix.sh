@@ -3,7 +3,8 @@
 # scores 0.5 through the fill rule). Samples come from datasets.tsv, rows from rows.tsv, both next to this script.
 #
 #   MODE=check  bash run_matrix.sh                 # login node: every path exists, ground truth sits on the right base
-#   MODE=prep   [DS="ecoli_wt anabaena"] ...       # CPU jobs: reference copy, sorted BAM, first-NREADS subset (sub.bam)
+#   MODE=prep   [DS="ecoli_wt anabaena"] ...       # CPU jobs: reference copy, sorted BAM, first-NREADS subset (sub.bam);
+#                                                  # a BAM without move tables is first re-basecalled (GPU job, --emit-moves)
 #   MODE=infer  [TOOLS="unimeth_6mA"] [DS=...]     # GPU jobs, one per tool x sample, wait for that sample's prep
 #   MODE=score                                     # CPU job: score_matrix.py over everything that has finished
 #   MODE=all                                       # prep + infer for every sample and tool, then score
@@ -22,6 +23,7 @@ UM_HMU=$ME/Unimeth_5hmU                                   # patched clone ([5hmU
 MODELS=$ME/unimeth_models/checkpoints
 M_5mC=$MODELS/unimeth_r10.4.1_5kHz_5mC.pt; M_6mA=$MODELS/unimeth_r10.4.1_5kHz_6mA.pt
 M_5hmU=${M_5hmU:-$ME/unimeth_5hmU/runs/hmu_0922_1446_from1000_from1500/final.pt}     # the 3,000-step model (0.7725 held out)
+DORADO=/fs/cbcb-lab/storm/shared/rawhash2/basecallers/dorado-1.4.0-linux-x64/bin/dorado; DMODEL=$ME/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0
 DM2_ENV=$ME/envs/deepmod2; DM2_SRC=$ME/deepmod2_bench/DeepMod2; DM2_MODEL=${DM2_MODEL:-bilstm_r10.4.1_5khz_v5.0}
 SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="--gres=gpu:rtxa5000:1"
 CPU="--account=cbcb --partition=cbcb --qos=high"
@@ -43,16 +45,28 @@ job_of() { awk -v k="$1" -F'\t' '$1==k{print $2}' $W/jobs.tsv 2>/dev/null | tail
 dep() { local j; j=$(job_of "$1"); [ -n "$j" ] && [ -n "$(squeue -h -j $j 2>/dev/null)" ] && echo "--dependency=afterany:$j"; }
 record() { echo -e "$1\t$2" >> $W/jobs.tsv; }
 big_ref() { [ $(stat -Lc %s ${REF[$1]}) -gt 1000000000 ]; }                 # > 1 Gb reference: DeepMod2 workers each hold it
+has_moves() { [ $($SAM view $1 2>/dev/null | head -200 | grep -c 'mv:B') -gt 0 ]; }   # first 200 records carry move tables?
 
 case $MODE in
 check)
-    eval "$ENVACT" 2>/dev/null; python $HERE/check_rows.py --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv ;;
+    eval "$ENVACT" 2>/dev/null; python $HERE/check_rows.py --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --work $W --euk $EUK ;;
+
+basecall)   # GPU: Dorado sup v5 with --emit-moves, for samples whose collection BAM has no move tables (the oligo set)
+    for d in $DS; do
+        D=$W/$d; mkdir -p $D
+        [ -s $D/moves.bam ] && { echo "basecall $d: $D/moves.bam exists"; continue; }
+        J=$(sub $GPU --cpus-per-task=8 --mem=48G --time=08:00:00 --job-name=mtx_bc_$d --output=$W/logs/basecall_${d}_%j.log \
+              --wrap="MODE=_basecall DSID=$d WBASE=$W bash $HERE/run_matrix.sh")
+        [ -n "$J" ] && { record basecall:$d $J; echo "basecall $d: job $J"; }
+    done ;;
 
 prep)
     for d in $DS; do
         D=$W/$d; mkdir -p $D
         [ -s $D/status/prep.done ] 2>/dev/null && { echo "prep $d: done already"; continue; }
-        J=$(sub $CPU --cpus-per-task=8 --mem=32G --time=06:00:00 --job-name=mtx_prep_$d --output=$W/logs/prep_${d}_%j.log \
+        if [ ! -s $D/moves.bam ] && [ -z "$(job_of basecall:$d)" ] && ! has_moves ${BAM[$d]}; then
+            echo "prep $d: source BAM has no move tables, submitting a basecall first"; MODE=basecall DS=$d WBASE=$W bash $HERE/run_matrix.sh; fi
+        J=$(sub $(dep basecall:$d) $CPU --cpus-per-task=8 --mem=32G --time=06:00:00 --job-name=mtx_prep_$d --output=$W/logs/prep_${d}_%j.log \
               --wrap="MODE=_prep DSID=$d WBASE=$W bash $HERE/run_matrix.sh")
         [ -n "$J" ] && { record prep:$d $J; echo "prep $d: job $J"; }
     done ;;
@@ -95,7 +109,7 @@ status)
 # ---------------------------------------------------------------- job bodies (run inside sbatch)
 _prep)
     d=$DSID; D=$W/$d; mkdir -p $D/status; : > $D/status/prep.txt; eval "$ENVACT"; set -x
-    RU=${REUSE[$d]}; src=${BAM[$d]}; n=${NREADS[$d]}
+    RU=${REUSE[$d]}; src=${BAM[$d]}; n=${NREADS[$d]}; [ -s $D/moves.bam ] && src=$D/moves.bam
     if [ "$RU" != "-" ] && [ -s $EUK/$RU/ref.fa.fai ]; then ln -sf $EUK/$RU/ref.fa $D/ref.fa; ln -sf $EUK/$RU/ref.fa.fai $D/ref.fa.fai
     elif [ ! -s $D/ref.fa.fai ]; then cp -L ${REF[$d]} $D/ref.fa && $SAM faidx $D/ref.fa || exit 1; fi
     if [ "$RU" != "-" ] && [ -s $EUK/$RU/sub.bam ]; then ln -sf $EUK/$RU/sub.bam $D/sub.bam; ln -sf $EUK/$RU/sub.bam.bai $D/sub.bam.bai; echo "sub.bam reused from $EUK/$RU" >> $D/status/prep.txt
@@ -107,6 +121,13 @@ _prep)
     fi
     echo "sub.bam: $($SAM view -c $D/sub.bam) alignments, mv tags in first 200: $($SAM view $D/sub.bam | head -200 | grep -c 'mv:B'), span: $($SAM view $D/sub.bam | awk 'NR==1{c=$3; s=$4} {e=$4} END{print c":"s"-"e}')" >> $D/status/prep.txt
     echo "prep finished $(date)" >> $D/status/prep.txt; cp $D/status/prep.txt $D/status/prep.done ;;
+
+_basecall)
+    d=$DSID; D=$W/$d; mkdir -p $D/status; set -x
+    [ -s $D/ref.fa.fai ] || { cp -L ${REF[$d]} $D/ref.fa && $SAM faidx $D/ref.fa || exit 1; }
+    $DORADO basecaller $DMODEL ${POD5[$d]} --emit-moves --reference $D/ref.fa > $D/moves.unsorted.bam \
+        && $SAM sort -@ 8 -m 2G -T $D/tmp_bc -o $D/moves.bam $D/moves.unsorted.bam && $SAM index $D/moves.bam && rm -f $D/moves.unsorted.bam \
+        && echo "basecalled with move tables: $($SAM flagstat $D/moves.bam | grep -m1 'mapped (')" >> $D/status/prep.txt || { rm -f $D/moves.bam; echo 'basecall FAILED' >> $D/status/prep.txt; exit 1; } ;;
 
 _infer)
     d=$DSID; t=$TOOL; D=$W/$d; T=$D/$t; mkdir -p $T; rm -f $T/FAILED; set -x
@@ -140,5 +161,5 @@ _infer)
 _score)
     eval "$ENVACT"; python $HERE/score_matrix.py --work $W --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --tools "$TOOLS" --repo $REPO --samtools $SAM 2>&1 | tee $W/status/score.txt ;;
 
-*)  echo "MODE must be check | prep | infer | score | all | status"; exit 1 ;;
+*)  echo "MODE must be check | basecall | prep | infer | score | all | status"; exit 1 ;;
 esac

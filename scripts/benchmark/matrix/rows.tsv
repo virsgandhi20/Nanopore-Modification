@@ -6,13 +6,13 @@
 # all | cpg | noncpg (split with the dataset's reference). mincov = coverage floor; only candidate positions covered
 # by >= mincov reads of sub.bam are scored, and among those, positions the tool never scored count as unmodified (0).
 #row	chem	base	type	datasets	context	gt	cand	mincov	note
-ecoli_dam_6mA	6mA	A	one	ecoli_wt	all	by_enzyme/dam/gt_plus.bed,by_enzyme/dam/gt_minus.bed	by_enzyme/dam/cand_plus.bed,by_enzyme/dam/cand_minus.bed	10	GATC preset, confirmed by callers (97%)
-ecoli_dcm_5mC	5mC	C	one	ecoli_wt	noncpg	by_enzyme/dcm/gt_plus.bed,by_enzyme/dcm/gt_minus.bed	by_enzyme/dcm/cand_plus.bed,by_enzyme/dcm/cand_minus.bed	10	CCWGG preset
-ecoli_mssi_5mC	5mC	C	one	ecoli_mssi	cpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	M.SssI, every CpG
-anabaena_6mA	6mA	A	one	anabaena	all	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	GATC preset, confirmed
-tdenticola_6mA	6mA	A	one	tdenticola	all	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	preset sites unmethylated per two callers (Sep 20 post); scored as-is, flagged in the consistency report
-hp26695_mod	mixed	N	one	hp26695	all	gt_modified.bed	candidate.bed	10	collection file = every modification; per-chemistry files needed for 6mA/5mC/4mC rows
-hpj99_mod	mixed	N	one	hpj99	all	gt_modified.bed	candidate.bed	10	same; J99 6mA preset unmethylated per callers
+ecoli_dam_6mA	6mA	A	one	ecoli_wt	all	by_enzyme/dam/gt_modified_plus.bed,by_enzyme/dam/gt_modified_minus.bed	by_enzyme/dam/candidate.bed	10	GATC preset, confirmed by callers (97%)
+ecoli_dcm_5mC	5mC	C	one	ecoli_wt	noncpg	by_enzyme/dcm/gt_modified_plus.bed,by_enzyme/dcm/gt_modified_minus.bed	by_enzyme/dcm/candidate.bed	10	CCWGG preset
+ecoli_mssi_5mC	5mC	C	one	ecoli_mssi	cpg	gt_plus.bed,gt_minus.bed	candidate.bed	10	M.SssI, every CpG
+anabaena_6mA	6mA	A	one	anabaena	all	gt_plus.bed,gt_minus.bed	candidate.bed	10	GATC preset, confirmed
+tdenticola_6mA	6mA	A	one	tdenticola	all	gt_plus.bed,gt_minus.bed	candidate.bed	10	preset sites unmethylated per two callers (Sep 20 post); scored as-is, flagged in the consistency report
+hp26695_mod	mixed	N	one	hp26695	all	gt_modified_plus.bed,gt_modified_minus.bed	candidate.bed	10	collection file = every modification; per-chemistry files needed for 6mA/5mC/4mC rows
+hpj99_mod	mixed	N	one	hpj99	all	gt_modified_plus.bed,gt_modified_minus.bed	candidate.bed	10	same; J99 6mA preset unmethylated per callers
 arabidopsis_cpg	5mC	C	one	arabidopsis	cpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	bisulfite call set
 arabidopsis_noncpg	5mC	C	one	arabidopsis	noncpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	bisulfite call set (9 positives in the region)
 hg002_cpg	5mC	C	one	hg002	cpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	~1x: floor pending (Bhargav)
