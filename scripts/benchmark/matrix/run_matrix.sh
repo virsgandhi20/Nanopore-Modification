@@ -160,7 +160,8 @@ _infer)
         if [ ! -s $T/sub.pod5 ]; then
             $SAM view $D/sub.bam | cut -f1 | sort -u > $T/ids.txt
             if [ -d ${POD5[$d]} ]; then PIN="-r ${POD5[$d]}"; else PIN="${POD5[$d]}"; fi
-            pod5 filter --ids $T/ids.txt --output $T/sub.pod5 --missing-ok --duplicate-ok -t 8 $PIN > $T/pod5_filter.log 2>&1 || { rm -f $T/sub.pod5; echo "pod5 filter failed: $(tail -1 $T/pod5_filter.log)" > $T/FAILED; exit 1; }
+            PFOPT=""; pod5 filter --help 2>/dev/null | grep -q -- "--missing-ok" && PFOPT="--missing-ok"      # flag names differ between pod5 versions
+            pod5 filter --ids $T/ids.txt --output $T/sub.pod5 $PFOPT -t 8 $PIN > $T/pod5_filter.log 2>&1 || { rm -f $T/sub.pod5; echo "pod5 filter failed: $(tail -1 $T/pod5_filter.log)" > $T/FAILED; exit 1; }
         fi
         [ -s $T/calls.tsv ] || rockfish inference -i $T/sub.pod5 --bam_path $D/sub.bam --model_path $RF_MODEL -d 0 -t 8 -b 512 -o $T/calls.tsv > $T/infer.log 2>&1 \
             || { echo "rockfish inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }
