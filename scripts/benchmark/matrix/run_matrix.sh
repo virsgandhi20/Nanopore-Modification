@@ -1,0 +1,144 @@
+#!/bin/bash
+# Every tool on every row of Table 1 (Bhargav, Sep 25-26: no N/A cells; a tool with no model for a row's chemistry
+# scores 0.5 through the fill rule). Samples come from datasets.tsv, rows from rows.tsv, both next to this script.
+#
+#   MODE=check  bash run_matrix.sh                 # login node: every path exists, ground truth sits on the right base
+#   MODE=prep   [DS="ecoli_wt anabaena"] ...       # CPU jobs: reference copy, sorted BAM, first-NREADS subset (sub.bam)
+#   MODE=infer  [TOOLS="unimeth_6mA"] [DS=...]     # GPU jobs, one per tool x sample, wait for that sample's prep
+#   MODE=score                                     # CPU job: score_matrix.py over everything that has finished
+#   MODE=all                                       # prep + infer for every sample and tool, then score
+#   MODE=status                                    # queue, what finished, the grid
+# Tools: unimeth_5mC (all-context model), unimeth_6mA, unimeth_5hmU (fine-tuned, patched clone), deepmod2 (CpG),
+# rockfish (CpG; wired once its output format is known). Plant/human samples reuse the sub.bam, UniMeth 5mC and
+# DeepMod2 outputs already produced under $EUK by run_catalog_rows.sh (datasets.tsv `reuse`).
+set -uo pipefail
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd); HERE=$REPO/scripts/benchmark/matrix
+export CAT=/fs/cbcb-lab/storm/shared/data ME=/fs/nexus-scratch/vgandhi EUK=/fs/cbcb-lab/storm/vgandhi/euk UMBC=/fs/cbcb-lab/storm/shared/umbc-ont-data
+W=${WBASE:-/fs/cbcb-lab/storm/vgandhi/matrix}; mkdir -p $W/logs $W/status $W/rows
+TOOLS=${TOOLS:-"unimeth_5mC unimeth_6mA unimeth_5hmU deepmod2"}
+SAM=/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools
+ENVACT="source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $ME/envs/unimeth"
+UM_HMU=$ME/Unimeth_5hmU                                   # patched clone ([5hmU] token, --hmU); shadows the package via PYTHONPATH
+MODELS=$ME/unimeth_models/checkpoints
+M_5mC=$MODELS/unimeth_r10.4.1_5kHz_5mC.pt; M_6mA=$MODELS/unimeth_r10.4.1_5kHz_6mA.pt
+M_5hmU=${M_5hmU:-$ME/unimeth_5hmU/runs/hmu_0922_1446_from1000_from1500/final.pt}     # the 3,000-step model (0.7725 held out)
+DM2_ENV=$ME/envs/deepmod2; DM2_SRC=$ME/deepmod2_bench/DeepMod2; DM2_MODEL=${DM2_MODEL:-bilstm_r10.4.1_5khz_v5.0}
+SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="--gres=gpu:rtxa5000:1"
+CPU="--account=cbcb --partition=cbcb --qos=high"
+MODE=${MODE:-status}
+
+# ---- tables -> bash arrays (paths expanded by matrix_common.py so both sides read them the same way)
+declare -A GTDIR POD5 BAM REF NREADS REUSE; DSIDS=()
+while IFS=$'\t' read -r id gtdir pod5 bam ref nreads reuse; do
+    [ -n "$id" ] && [ "${id:0:1}" != "#" ] || continue
+    DSIDS+=($id); GTDIR[$id]=$gtdir; POD5[$id]=$pod5; BAM[$id]=$bam; REF[$id]=$ref; NREADS[$id]=$nreads; REUSE[$id]=$reuse
+done < <(python -c "
+import sys; sys.path.insert(0, '$HERE'); from matrix_common import load_datasets
+for d in load_datasets('$HERE/datasets.tsv').values(): print('\t'.join(str(d[k]) for k in ('id','gtdir','pod5','bam','ref','nreads','reuse')))")
+[ ${#DSIDS[@]} -gt 0 ] || { echo "datasets.tsv could not be read (python + matrix_common.py?)"; exit 1; }
+DS=${DS:-${DSIDS[*]}}
+
+sub() { local id; id=$(sbatch --parsable $SB "$@") || { echo "sbatch failed: $*" >&2; echo ""; return; }; echo ${id%%;*}; }
+job_of() { awk -v k="$1" -F'\t' '$1==k{print $2}' $W/jobs.tsv 2>/dev/null | tail -1; }
+dep() { local j; j=$(job_of "$1"); [ -n "$j" ] && [ -n "$(squeue -h -j $j 2>/dev/null)" ] && echo "--dependency=afterany:$j"; }
+record() { echo -e "$1\t$2" >> $W/jobs.tsv; }
+big_ref() { [ $(stat -Lc %s ${REF[$1]}) -gt 1000000000 ]; }                 # > 1 Gb reference: DeepMod2 workers each hold it
+
+case $MODE in
+check)
+    eval "$ENVACT" 2>/dev/null; python $HERE/check_rows.py --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv ;;
+
+prep)
+    for d in $DS; do
+        D=$W/$d; mkdir -p $D
+        [ -s $D/status/prep.done ] 2>/dev/null && { echo "prep $d: done already"; continue; }
+        J=$(sub $CPU --cpus-per-task=8 --mem=32G --time=06:00:00 --job-name=mtx_prep_$d --output=$W/logs/prep_${d}_%j.log \
+              --wrap="MODE=_prep DSID=$d WBASE=$W bash $HERE/run_matrix.sh")
+        [ -n "$J" ] && { record prep:$d $J; echo "prep $d: job $J"; }
+    done ;;
+
+infer)
+    for t in $TOOLS; do for d in $DS; do
+        T=$W/$d/$t; mkdir -p $T
+        [ -s $T/sites.std.tsv ] && { echo "$t on $d: done already"; continue; }
+        case $t in
+            deepmod2) if big_ref $d; then RES="--cpus-per-task=4 --mem=120G"; else RES="--cpus-per-task=12 --mem=48G"; fi ;;
+            *)        RES="--cpus-per-task=8 --mem=48G" ;;
+        esac
+        J=$(sub $(dep prep:$d) $GPU $RES --time=08:00:00 --job-name=mtx_${t}_$d --output=$W/logs/${t}_${d}_%j.log \
+              --wrap="MODE=_infer DSID=$d TOOL=$t WBASE=$W bash $HERE/run_matrix.sh")
+        [ -n "$J" ] && { record infer:$t:$d $J; echo "$t on $d: job $J $(dep prep:$d)"; }
+    done; done ;;
+
+score)
+    DEPS=$(for t in $TOOLS; do for d in $DS; do j=$(job_of infer:$t:$d); [ -n "$j" ] && [ -n "$(squeue -h -j $j 2>/dev/null)" ] && echo -n ":$j"; done; done)
+    J=$(sub ${DEPS:+--dependency=afterany${DEPS}} $CPU --cpus-per-task=4 --mem=48G --time=06:00:00 --job-name=mtx_score --output=$W/logs/score_%j.log \
+          --wrap="MODE=_score WBASE=$W TOOLS='$TOOLS' bash $HERE/run_matrix.sh")
+    [ -n "$J" ] && { record score $J; echo "score: job $J${DEPS:+ (after$DEPS)}"; } ;;
+
+all)
+    MODE=prep bash $HERE/run_matrix.sh; MODE=infer TOOLS="$TOOLS" DS="$DS" bash $HERE/run_matrix.sh; MODE=score TOOLS="$TOOLS" DS="$DS" bash $HERE/run_matrix.sh ;;
+
+status)
+    squeue -u $USER -o "%.9i %.28j %.3t %.9M %R" | grep -E "mtx_|JOBID"; echo
+    printf "%-12s %-5s" sample prep; for t in $TOOLS; do printf " %-13s" $t; done; echo
+    for d in $DS; do
+        printf "%-12s %-5s" $d "$([ -s $W/$d/status/prep.done ] && echo ok || echo -)"
+        for t in $TOOLS; do
+            if [ -s $W/$d/$t/sites.std.tsv ]; then s=ok; elif [ -s $W/$d/$t/FAILED ]; then s=FAILED; elif [ -n "$(dep infer:$t:$d)" ]; then s=queued; else s=-; fi
+            printf " %-13s" $s
+        done; echo
+    done
+    [ -s $W/matrix_grid.tsv ] && { echo; echo "== grid (AUROC; mean P for UniMeth, call frequency otherwise)"; column -t -s $'\t' $W/matrix_grid.tsv; }
+    for d in $DS; do for t in $TOOLS; do [ -s $W/$d/$t/FAILED ] && echo "FAILED $t on $d: $(cat $W/$d/$t/FAILED)"; done; done; true ;;
+
+# ---------------------------------------------------------------- job bodies (run inside sbatch)
+_prep)
+    d=$DSID; D=$W/$d; mkdir -p $D/status; : > $D/status/prep.txt; eval "$ENVACT"; set -x
+    RU=${REUSE[$d]}; src=${BAM[$d]}; n=${NREADS[$d]}
+    if [ "$RU" != "-" ] && [ -s $EUK/$RU/ref.fa.fai ]; then ln -sf $EUK/$RU/ref.fa $D/ref.fa; ln -sf $EUK/$RU/ref.fa.fai $D/ref.fa.fai
+    elif [ ! -s $D/ref.fa.fai ]; then cp -L ${REF[$d]} $D/ref.fa && $SAM faidx $D/ref.fa || exit 1; fi
+    if [ "$RU" != "-" ] && [ -s $EUK/$RU/sub.bam ]; then ln -sf $EUK/$RU/sub.bam $D/sub.bam; ln -sf $EUK/$RU/sub.bam.bai $D/sub.bam.bai; echo "sub.bam reused from $EUK/$RU" >> $D/status/prep.txt
+    elif [ ! -s $D/sub.bam ]; then
+        if $SAM view -H $src | grep -q 'SO:coordinate'; then ln -sf $src $D/reads.sorted.bam; { [ -s $src.bai ] && ln -sf $src.bai $D/reads.sorted.bam.bai; } || $SAM index $D/reads.sorted.bam
+        else $SAM sort -@ 8 -m 2G -T $D/tmp_sort -o $D/reads.sorted.bam $src && $SAM index $D/reads.sorted.bam || exit 1; fi
+        if [ $n -eq 0 ]; then ln -sf $D/reads.sorted.bam $D/sub.bam; ln -sf $D/reads.sorted.bam.bai $D/sub.bam.bai
+        else $SAM view -h $D/reads.sorted.bam | awk -v n=$n '/^@/ {print; next} c<n {print; c++}' | $SAM view -b -o $D/sub.bam - && $SAM index $D/sub.bam || exit 1; fi
+    fi
+    echo "sub.bam: $($SAM view -c $D/sub.bam) alignments, mv tags in first 200: $($SAM view $D/sub.bam | head -200 | grep -c 'mv:B'), span: $($SAM view $D/sub.bam | awk 'NR==1{c=$3; s=$4} {e=$4} END{print c":"s"-"e}')" >> $D/status/prep.txt
+    echo "prep finished $(date)" >> $D/status/prep.txt; cp $D/status/prep.txt $D/status/prep.done ;;
+
+_infer)
+    d=$DSID; t=$TOOL; D=$W/$d; T=$D/$t; mkdir -p $T; rm -f $T/FAILED; set -x
+    [ -s $D/sub.bam ] || { echo "prep outputs missing" > $T/FAILED; exit 1; }
+    RU=${REUSE[$d]}
+    case $t in
+    unimeth_5mC|unimeth_6mA|unimeth_5hmU)
+        eval "$ENVACT"
+        case $t in
+            unimeth_5mC)  M=$M_5mC;  FLAGS="--cpg 1 --chg 1 --chh 1"; TYPES='[CpG],[CHG],[CHH]'; CMD="unimeth-infer"
+                          [ "$RU" != "-" ] && [ -s $EUK/$RU/unimeth/calls.txt ] && [ ! -s $T/calls.txt ] && ln -sf $EUK/$RU/unimeth/calls.txt $T/calls.txt ;;
+            unimeth_6mA)  M=$M_6mA;  FLAGS="--cpg 0 --chg 0 --chh 0 --m6A 1"; TYPES='[m6A]'; CMD="unimeth-infer" ;;
+            unimeth_5hmU) M=$M_5hmU; FLAGS="--cpg 0 --chg 0 --chh 0 --hmU 1"; TYPES='[5hmU]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_HMU ;;
+        esac
+        [ -s $M ] || { echo "model missing: $M" > $T/FAILED; exit 1; }
+        [ -s $T/calls.txt ] || $CMD --pod5 ${POD5[$d]} --bam $D/sub.bam --model $M --pore_type R10.4.1 --frequency 4khz $FLAGS --output_format tsv --out $T/calls.txt --num_workers 8 --signal_index $T/signal-index.sqlite > $T/infer.log 2>&1 \
+            || { echo "inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }
+        python $HERE/sites_std.py --tool unimeth --types "$TYPES" $T/calls.txt $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
+    deepmod2)
+        if [ "$RU" != "-" ] && ls $EUK/$RU/deepmod2/calls/*per_site* > /dev/null 2>&1 && [ ! -d $T/calls ]; then ln -sfn $EUK/$RU/deepmod2/calls $T/calls; fi
+        if big_ref $d; then TH=4; else TH=12; fi
+        ls $T/calls/*per_site* > /dev/null 2>&1 || $DM2_ENV/bin/python $DM2_SRC/deepmod2 detect --bam $D/sub.bam --input ${POD5[$d]} --file_type pod5 --model $DM2_MODEL --seq_type dna --ref $D/ref.fa --threads $TH --output $T/calls > $T/detect.log 2>&1 \
+            || { echo "deepmod2 detect failed: $(grep -iE 'error|exception' $T/detect.log | tail -1)" > $T/FAILED; exit 1; }
+        eval "$ENVACT"; python $HERE/sites_std.py --tool deepmod2 $T/calls $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
+    rockfish)
+        echo "rockfish: not wired yet (needs the smoke-test output format)" > $T/FAILED; exit 1 ;;
+    *)  echo "unknown tool $t" > $T/FAILED; exit 1 ;;
+    esac
+    echo "$t on $d finished $(date): $(wc -l < $T/sites.std.tsv) site rows" ;;
+
+_score)
+    eval "$ENVACT"; python $HERE/score_matrix.py --work $W --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --tools "$TOOLS" --repo $REPO --samtools $SAM 2>&1 | tee $W/status/score.txt ;;
+
+*)  echo "MODE must be check | prep | infer | score | all | status"; exit 1 ;;
+esac
