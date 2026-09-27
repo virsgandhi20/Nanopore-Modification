@@ -11,7 +11,7 @@
 #   MODE=status                                    # queue, what finished, the grid
 #   MODE=audit                                     # reads seen by each finished tool vs reads in the subset (catches truncated outputs)
 #   FORCE=1 with prep or infer redoes a finished sample / tool (prep also re-applies the pod5 read filter)
-#   PART=cbcb submits to the lab partition (qos high, any GPU) instead of scavenger
+#   PART=cbcb submits to the lab partition (qos high, any GPU) instead of scavenger; UniMeth then runs with --batch_size 64
 # Tools: unimeth_5mC (all-context model), unimeth_6mA, unimeth_5hmU / unimeth_5hmC / unimeth_4mC (fine-tuned, patched clone), deepmod2 (CpG),
 # rockfish (CpG; wired once its output format is known). Plant/human samples reuse the sub.bam, UniMeth 5mC and
 # DeepMod2 outputs already produced under $EUK by run_catalog_rows.sh (datasets.tsv `reuse`).
@@ -32,7 +32,8 @@ RF_ENV=$ME/envs/rockfish; RF_MODEL=${RF_MODEL:-$ME/rockfish_bench/models/rf_5kHz
 DM2_ENV=$ME/envs/deepmod2; DM2_SRC=$ME/deepmod2_bench/DeepMod2; DM2_MODEL=${DM2_MODEL:-bilstm_r10.4.1_5khz_v5.0}
 SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="--gres=gpu:rtxa5000:1"
 CPU="--account=cbcb --partition=cbcb --qos=high"
-[ "${PART:-}" = cbcb ] && { SB="--account=cbcb --partition=cbcb --qos=high"; GPU="--gres=gpu:1"; }   # PART=cbcb: lab partition instead of scavenger
+UM_BATCH=${UM_BATCH:-256}                                                   # UniMeth inference batch (default 256 fits the 24 GB A5000s)
+[ "${PART:-}" = cbcb ] && { SB="--account=cbcb --partition=cbcb --qos=high"; GPU="--gres=gpu:1"; UM_BATCH=${UM_BATCH_CBCB:-64}; }   # PART=cbcb: lab partition (11 GB cards: UniMeth OOMs at 256, 64 fits)
 MODE=${MODE:-status}
 
 # ---- tables -> bash arrays (paths expanded by matrix_common.py so both sides read them the same way)
@@ -87,7 +88,7 @@ infer)
             *)        RES="--cpus-per-task=8 --mem=48G" ;;
         esac
         J=$(sub $(dep prep:$d) $GPU $RES --time=08:00:00 --job-name=mtx_${t}_$d --output=$W/logs/${t}_${d}_%j.log \
-              --wrap="MODE=_infer DSID=$d TOOL=$t WBASE=$W RF_ORIENT=$RF_ORIENT RF_SHIFT=$RF_SHIFT bash $HERE/run_matrix.sh")
+              --wrap="MODE=_infer DSID=$d TOOL=$t WBASE=$W RF_ORIENT=$RF_ORIENT RF_SHIFT=$RF_SHIFT UM_BATCH=$UM_BATCH bash $HERE/run_matrix.sh")
         [ -n "$J" ] && { record infer:$t:$d $J; echo "$t on $d: job $J $(dep prep:$d)"; }
     done; done ;;
 
@@ -175,7 +176,7 @@ _infer)
             unimeth_5hmC|unimeth_4mC) M=$( [ $t = unimeth_5hmC ] && echo $M_5hmC || echo $M_4mC ); FLAGS="--cpg 1 --chg 1 --chh 1"; TYPES='[CpG],[CHG],[CHH]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_HMU ;;   # fine-tuned all-context C models
         esac
         [ -s $M ] || { echo "model missing: $M" > $T/FAILED; exit 1; }
-        [ -s $T/calls.txt ] || { rm -f $T/part.txt; $CMD --pod5 ${POD5[$d]} --bam $D/sub.bam --model $M --pore_type R10.4.1 --frequency 4khz $FLAGS --output_format tsv --out $T/part.txt --num_workers 8 --signal_index $T/signal-index.sqlite > $T/infer.log 2>&1 \
+        [ -s $T/calls.txt ] || { rm -f $T/part.txt; PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True $CMD --pod5 ${POD5[$d]} --bam $D/sub.bam --model $M --pore_type R10.4.1 --frequency 4khz $FLAGS --batch_size $UM_BATCH --output_format tsv --out $T/part.txt --num_workers 8 --signal_index $T/signal-index.sqlite > $T/infer.log 2>&1 \
             && mv $T/part.txt $T/calls.txt || { echo "inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }; }
         python $HERE/sites_std.py --tool unimeth --types "$TYPES" $T/calls.txt $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
     deepmod2)
