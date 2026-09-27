@@ -10,7 +10,7 @@
 #               hold-out = the reads of the matrix's sub.bam region (the rest of the genome trains)
 #
 #   CHEM=5hmC MODE=setup|prep|train|status bash run.sh        (setup on the login node; prep CPU job; train GPU job)
-#   Continue a preempted run:  CHEM=5hmC MODE=train RUN=<run dir> bash run.sh
+#   Continue a preempted run:  CHEM=5hmC MODE=train RUN=<run dir> bash run.sh      FORCE=1 MODE=prep redoes the split + tags
 # After training, run the matrix with TOOLS="unimeth_5hmC" (or unimeth_4mC): M_5hmC / M_4mC point at <run>/final.pt.
 set -uo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd); HERE=$REPO/scripts/benchmark/unimeth_finetune; MX=$REPO/scripts/benchmark/matrix
@@ -25,8 +25,10 @@ SB="--account=scavenger --partition=scavenger --qos=scavenger --requeue"; GPU="-
 MAX_STEPS=${MAX_STEPS:-3000}; BATCH=${BATCH:-32}; VAL_READS=${VAL_READS:-800}; MODE=${MODE:-status}
 case $CHEM in
 5hmC) SYN=$CAT/synthetic_all5mers_r10.4.1_ont_open_data
-      POS_BAM=$SYN/basecalled/5hmC/reads_refined.bam; POS_POD5=$SYN/pod5_files/5hmC_rep1.pod5
-      NEG_BAM=$SYN/basecalled/control/reads_refined.bam; NEG_POD5=$SYN/pod5_files/control_rep1.pod5
+      # the collection's reads_refined.bam carry RawMod-refined move tables that no longer match the basecalls (UniMeth:
+      # SignalSequenceMismatchError), so the oligo samples use the matrix's own Dorado --emit-moves basecalls (MODE=basecall)
+      POS_BAM=$MATRIX/syn_5hmC/moves.bam; POS_POD5=$SYN/pod5_files/5hmC_rep1.pod5
+      NEG_BAM=$MATRIX/syn_control/moves.bam; NEG_POD5=$SYN/pod5_files/control_rep1.pod5
       SITES=$SYN/ground_truth/all_5mers_5hmC_sites.bed; CODE=h; FLAG="--hmC 1"; HOLDOUT=reads ;;
 4mC)  HP=$CAT/hpylori_26695_wt_r10.4.1_ontbasemod_2024; HPW=$CAT/hpylori_26695_wga_r10.4.1_ontbasemod_2024
       POS_BAM=$HP/basecalled/reads.bam; POS_POD5=$HP/pod5_files; NEG_BAM=$HPW/basecalled/reads.bam; NEG_POD5=$HPW/pod5_files
@@ -46,7 +48,10 @@ setup)
 
 prep)
     : > $W/status/prep.txt
-    J=$(sub $CPU --cpus-per-task=8 --mem=48G --time=08:00:00 --job-name=ft_${CHEM}_prep --output=$W/logs/prep_%j.log --wrap="MODE=_prep CHEM=$CHEM W=$W bash $HERE/run.sh")
+    [ -n "${FORCE:-}" ] && rm -rf $W/pod5/* $W/bam/*                     # FORCE=1: redo the read split and the tagged BAMs
+    DEP=""; for d in syn_5hmC syn_control hp26695 hp26695_wga; do        # wait for a matrix basecall/prep of the source samples if one is queued
+        j=$(awk -v k=basecall:$d -F'\t' '$1==k{print $2}' $MATRIX/jobs.tsv 2>/dev/null | tail -1); [ -n "$j" ] && [ -n "$(squeue -h -j $j 2>/dev/null)" ] && DEP="$DEP:$j"; done
+    J=$(sub ${DEP:+--dependency=afterany$DEP} $CPU --cpus-per-task=8 --mem=48G --time=08:00:00 --job-name=ft_${CHEM}_prep --output=$W/logs/prep_%j.log --wrap="MODE=_prep CHEM=$CHEM W=$W bash $HERE/run.sh")
     echo "prep: job $J -> $W"; echo -e "prep\t$J" >> $W/jobs.tsv ;;
 
 _prep)
