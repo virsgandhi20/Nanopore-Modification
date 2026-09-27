@@ -10,7 +10,7 @@
 #row	chem	base	type	datasets	context	gt	cand	mincov	note
 ecoli_dam_6mA	6mA	A	one	ecoli_wt	all	by_enzyme/dam/gt_modified_plus.bed,by_enzyme/dam/gt_modified_minus.bed	refbase:A	10	GATC preset, confirmed by callers (97%); the collection's candidate.bed holds only the positives, so negatives = every other covered A
 ecoli_dcm_5mC	5mC	C	one	ecoli_wt	noncpg	by_enzyme/dcm/gt_modified_plus.bed,by_enzyme/dcm/gt_modified_minus.bed	refbase:C	10	CCWGG preset; negatives = every other covered non-CpG C
-ecoli_mssi_5mC	5mC	C	one	ecoli_mssi	cpg	gt_plus.bed,gt_minus.bed	refbase:C	10	M.SssI, every CpG; gt file also lists the GATC adenines (dropped by the base restriction); negatives = every other covered CpG C, i.e. nearly none
+ecoli_mssi_5mC	5mC	C	one	ecoli_mssi	all	gt_plus.bed,gt_minus.bed	refbase:C	10	M.SssI methylates every CpG, so negatives are the covered non-CpG cytosines (context all, as in the Sep 20 row); the gt file also lists the GATC adenines, dropped by the base restriction
 anabaena_6mA	6mA	A	one	anabaena	all	gt_plus.bed,gt_minus.bed	refbase:A	10	GATC preset, confirmed; negatives = every other covered A
 tdenticola_6mA	6mA	A	one	tdenticola	all	gt_plus.bed,gt_minus.bed	refbase:A	10	preset sites unmethylated per two callers (Sep 20 post); scored as-is, flagged in the consistency report; negatives = every other covered A
 hp26695_mod	mixed	N	two	hp26695,hp26695_wga	all	gt_modified_plus.bed,gt_modified_minus.bed	same	10	collection convention: WT positives vs the WGA sample at the same positions (candidate.bed holds only the positives, so the negatives must be the WGA reads)
