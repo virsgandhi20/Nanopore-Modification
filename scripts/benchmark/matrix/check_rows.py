@@ -107,22 +107,28 @@ for r in rows:
                 print(f"  {col} base check: {ok:,} of {n:,} sampled positions are {r['base']}/{COMP[r['base']]} ({frac:.1%}), {ncol} columns" + (f", {unknown} on contigs not in the reference" if unknown else "") + flag)
                 if frac < 0.95: bad += 1
             if files["gt"] and files["cand"]:                       # positives outside the candidate set are never scored
-                def full(paths):
-                    S = set()
-                    for p in paths:
-                        for line in open(p):
-                            c = line.split()
-                            if len(c) >= 2 and not c[0].startswith("#"): S.add((c[0], int(c[1])))
-                    return S
-                G = full(files["gt"]); Cd = full(files["cand"]); out = G - Cd
-                print(f"  gt vs cand: {len(G):,} positives, {len(Cd):,} candidates, {len(out):,} positives NOT in the candidate set" + ("   <-- CHECK: those positives cannot be scored by any tool" if out else ""))
-                if out:
+                # memory-bounded: a sample of the positives is held in a set, the candidate files are streamed past it
+                sample = set(); n_gt = 0
+                for p in files["gt"]:
+                    for line in open(p):
+                        cc = line.split()
+                        if len(cc) >= 2 and not cc[0].startswith("#"):
+                            n_gt += 1
+                            if len(sample) < 200000: sample.add((cc[0], int(cc[1])))
+                missing_ = set(sample)
+                for p in files["cand"]:
+                    for line in open(p):
+                        cc = line.split()
+                        if len(cc) >= 2 and not cc[0].startswith("#"): missing_.discard((cc[0], int(cc[1])))
+                frac = len(missing_) / max(1, len(sample))
+                print(f"  gt vs cand: {n_gt:,} positives; of the first {len(sample):,}, {len(missing_):,} ({frac:.1%}) are NOT in the candidate files" + ("   <-- CHECK: those positives cannot be scored by any tool" if missing_ else ""))
+                if missing_:
                     comp = {}
-                    for ctg, q in list(out)[:20000]:
+                    for ctg, q in list(missing_)[:20000]:
                         s_ = cache.get(ctg)
                         if s_ is None and ctg in refs: s_ = cache[ctg] = fa.fetch(ctg).upper()
                         b = s_[q] if s_ and 0 <= q < len(s_) else "?"; comp[b] = comp.get(b, 0) + 1
-                    print(f"    bases of the positives outside the candidates: {dict(sorted(comp.items()))}"); bad += 1
+                    print(f"    bases of those positives: {dict(sorted(comp.items()))}"); bad += 1
     except Exception:
         problem("check crashed: " + traceback.format_exc().strip().splitlines()[-1])
 print(f"== {bad} problem(s)" if bad else "== all paths present, ground truth on the expected bases")
