@@ -9,6 +9,7 @@
 #   MODE=score                                     # CPU job: score_matrix.py over everything that has finished
 #   MODE=all                                       # prep + infer for every sample and tool, then score
 #   MODE=status                                    # queue, what finished, the grid
+#   FORCE=1 with prep or infer redoes a finished sample / tool (prep also re-applies the pod5 read filter)
 # Tools: unimeth_5mC (all-context model), unimeth_6mA, unimeth_5hmU (fine-tuned, patched clone), deepmod2 (CpG),
 # rockfish (CpG; wired once its output format is known). Plant/human samples reuse the sub.bam, UniMeth 5mC and
 # DeepMod2 outputs already produced under $EUK by run_catalog_rows.sh (datasets.tsv `reuse`).
@@ -64,6 +65,7 @@ basecall)   # GPU: Dorado sup v5 with --emit-moves, for samples whose collection
 prep)
     for d in $DS; do
         D=$W/$d; mkdir -p $D
+        [ -n "${FORCE:-}" ] && rm -f $D/status/prep.done $D/status/pod5_filtered
         [ -s $D/status/prep.done ] 2>/dev/null && { echo "prep $d: done already"; continue; }
         if [ ! -s $D/moves.bam ] && [ -z "$(job_of basecall:$d)" ] && ! has_moves ${BAM[$d]}; then
             echo "prep $d: source BAM has no move tables, submitting a basecall first"; MODE=basecall DS=$d WBASE=$W bash $HERE/run_matrix.sh; fi
@@ -74,7 +76,7 @@ prep)
 
 infer)
     for t in $TOOLS; do for d in $DS; do
-        T=$W/$d/$t; mkdir -p $T
+        T=$W/$d/$t; [ -n "${FORCE:-}" ] && rm -rf $T; mkdir -p $T
         [ -s $T/sites.std.tsv ] && { echo "$t on $d: done already"; continue; }
         case $t in
             deepmod2) if big_ref $d; then RES="--cpus-per-task=4 --mem=120G"; else RES="--cpus-per-task=12 --mem=48G"; fi ;;
@@ -119,6 +121,15 @@ _prep)
         else $SAM sort -@ 8 -m 2G -T $D/tmp_sort -o $D/reads.sorted.bam $src && $SAM index $D/reads.sorted.bam || exit 1; fi
         if [ $n -eq 0 ]; then ln -sf $D/reads.sorted.bam $D/sub.bam; ln -sf $D/reads.sorted.bam.bai $D/sub.bam.bai
         else $SAM view -h $D/reads.sorted.bam | awk -v n=$n '/^@/ {print; next} c<n {print; c++}' | $SAM view -b -o $D/sub.bam - && $SAM index $D/sub.bam || exit 1; fi
+    fi
+    # keep only reads whose signal is in the pod5 (the collection's oligo pod5s are per-replicate subsets of a BAM that
+    # covers the whole run; every tool skips or stalls on reads it cannot find, so all five must see the same reads)
+    if [ ! -s $D/status/pod5_filtered ]; then
+        python $HERE/pod5_ids.py ${POD5[$d]} 2>> $D/status/prep.txt | sort -u > $D/pod5_ids.txt || exit 1
+        n0=$($SAM view -c $D/sub.bam)
+        $SAM view -b -N $D/pod5_ids.txt -o $D/sub.inpod5.bam $D/sub.bam && $SAM index $D/sub.inpod5.bam || exit 1
+        rm -f $D/sub.bam $D/sub.bam.bai; mv $D/sub.inpod5.bam $D/sub.bam; mv $D/sub.inpod5.bam.bai $D/sub.bam.bai
+        echo "reads with signal in the pod5: $($SAM view -c $D/sub.bam) of $n0 alignments kept" | tee -a $D/status/prep.txt > $D/status/pod5_filtered
     fi
     echo "sub.bam: $($SAM view -c $D/sub.bam) alignments, mv tags in first 200: $($SAM view $D/sub.bam | head -200 | grep -c 'mv:B'), span: $($SAM view $D/sub.bam | awk 'NR==1{c=$3; s=$4} {e=$4} END{print c":"s"-"e}')" >> $D/status/prep.txt
     echo "prep finished $(date)" >> $D/status/prep.txt; cp $D/status/prep.txt $D/status/prep.done ;;
