@@ -7,9 +7,9 @@ minus-strand read is looked up at its own plus coordinate, so list both strands'
 modification), 0 otherwise. So a control sample (--state unmodified) gets 0 everywhere, and in the modified sample the
 bases outside the designed sites are labelled unmodified. --code is the SAM modification code (h = 5hmC, 21839 = 4mC).
 UniMeth's finetuner reads these tags (pysam modified_bases_forward). Existing MM/ML entries are kept and appended to.
-Secondary, supplementary and unmapped records are dropped; record order is preserved.
+Secondary, supplementary and unmapped records are dropped; the output is coordinate-sorted and indexed.
 """
-import argparse, sys
+import argparse, os, sys
 from array import array
 import pysam
 ap = argparse.ArgumentParser()
@@ -25,7 +25,8 @@ if a.state == "modified":
         c = line.split()
         if len(c) >= 2 and not c[0].startswith("#"): sites.add((c[0], int(c[1])))
 kept = dropped = n_base = n_mod = 0
-with pysam.AlignmentFile(a.inp, "rb", check_sq=False) as fin, pysam.AlignmentFile(a.out, "wb", template=fin) as fout:
+tmp = a.out + ".unsorted.bam"                                       # tagged in input order, then coordinate-sorted (the refined oligo BAMs are unsorted)
+with pysam.AlignmentFile(a.inp, "rb", check_sq=False) as fin, pysam.AlignmentFile(tmp, "wb", template=fin) as fout:
     for r in fin:
         if r.is_unmapped or r.is_secondary or r.is_supplementary: dropped += 1; continue
         fseq = r.get_forward_sequence()
@@ -49,6 +50,6 @@ with pysam.AlignmentFile(a.inp, "rb", check_sq=False) as fin, pysam.AlignmentFil
         r.set_tag("MM", mm, "Z"); r.set_tag("ML", mlarr)
         fout.write(r); kept += 1; n_base += len(idx)
         if a.limit and kept >= a.limit: break
-pysam.index(a.out)
-print(f"{a.out}: kept {kept:,} records ({dropped:,} dropped), {n_base:,} {a.base} positions tagged {a.base}+{a.code}, {n_mod:,} of them modified (ML=255)")
 if kept == 0: sys.exit("no records written")
+pysam.sort("-@", "4", "-o", a.out, tmp); os.remove(tmp); pysam.index(a.out)
+print(f"{a.out}: kept {kept:,} records ({dropped:,} dropped), {n_base:,} {a.base} positions tagged {a.base}+{a.code}, {n_mod:,} of them modified (ML=255); sorted and indexed")
