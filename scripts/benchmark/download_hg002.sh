@@ -1,8 +1,8 @@
 #!/bin/bash
 # Pull the first N pod5_pass files of the public GIAB HG002 R10.4.1 flowcell (ONT open data, giab_2023.05,
 # 20230424_1302_3H_PAO89685_2264ba8c) over HTTPS, then hand them to basecall_moves.sh. Bhargav (Sep 27): 10x
-# genome-wide is enough, data lives under storm/shared/data. The run is ~350 files at ~0.03x each (16 files = 0.46x), so
-# 10x means the WHOLE pod5_pass (~230 GB); 120 files was only 3.4x. Default NFILES=400 takes every file.
+# genome-wide is enough, data lives under storm/shared/data. Each file is ~0.03x (16 files = 0.46x) and
+# the run has 1,912 files (~55x); 10x is ~345 files, so the default NFILES=400 (~11.6x, ~260 GB) is the target.
 # Login node (needs internet). Resumable: wget -c skips finished files; run again after any interruption.
 #   DEST=/fs/cbcb-lab/storm/shared/data/human_hg002_r10.4.1_giab_2023.05_PAO89685_10x bash download_hg002.sh
 #   MODE=status DEST=... bash download_hg002.sh
