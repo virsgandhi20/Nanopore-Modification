@@ -13,6 +13,9 @@ anabaena_6mA	6mA	A	one	anabaena	all	gt_plus.bed,gt_minus.bed	candidate.bed	10	GA
 tdenticola_6mA	6mA	A	one	tdenticola	all	gt_plus.bed,gt_minus.bed	candidate.bed	10	preset sites unmethylated per two callers (Sep 20 post); scored as-is, flagged in the consistency report
 hp26695_mod	mixed	N	one	hp26695	all	gt_modified_plus.bed,gt_modified_minus.bed	candidate.bed	10	collection file = every modification; per-chemistry files needed for 6mA/5mC/4mC rows
 hpj99_mod	mixed	N	one	hpj99	all	gt_modified_plus.bed,gt_modified_minus.bed	candidate.bed	10	same; J99 6mA preset unmethylated per callers
+hpj99_4mC	4mC	C	one	hpj99	all	motif:TCNNNNNNNGC:1:both	refbase:C	10	HpyAIV preset (sheet row 17); Dorado 4mC at chance on it, GT to be checked; negatives = every other covered C
+hp26695_6mA	6mA	A	one	hp26695	all	${ME}/hp_labels/gt_6mA.bed	refbase:A	10	WT vs WGA differential GT (Vir, Sep 20), sheet row 21; negatives = every other covered A
+hp26695_5mC	5mC	C	one	hp26695	all	${ME}/hp_labels/gt_5mC.bed	refbase:C	10	WT vs WGA differential GT (Vir, Sep 20), sheet row 22; negatives = every other covered C
 arabidopsis_cpg	5mC	C	one	arabidopsis	cpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	bisulfite call set
 arabidopsis_noncpg	5mC	C	one	arabidopsis	noncpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	bisulfite call set (9 positives in the region)
 hg002_cpg	5mC	C	one	hg002	cpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	~1x: floor pending (Bhargav)

@@ -37,12 +37,30 @@ def read_positions(paths, refs=None):
 def write_bed(positions, path):
     with open(path, "w") as f:
         for c, p in sorted(positions): f.write(f"{c}\t{p}\t{p + 1}\n")
-def refbase_positions(ref, base):
-    import pysam
-    fa = pysam.FastaFile(ref); want = {base, COMP[base]}; out = set()
+IUPAC = {"A": "A", "C": "C", "G": "G", "T": "T", "R": "[AG]", "Y": "[CT]", "S": "[CG]", "W": "[AT]", "K": "[GT]", "M": "[AC]",
+         "B": "[CGT]", "D": "[AGT]", "H": "[ACT]", "V": "[ACG]", "N": "[ACGT]"}
+def revcomp(m):
+    pairs = {"A": "T", "T": "A", "C": "G", "G": "C", "R": "Y", "Y": "R", "S": "S", "W": "W", "K": "M", "M": "K", "B": "V", "V": "B", "D": "H", "H": "D", "N": "N"}
+    return "".join(pairs[c] for c in reversed(m))
+def spec_positions(spec, ref):
+    """refbase:<B>  every position whose reference base is B or its complement (a B on either strand)
+       motif:<IUPAC>:<offset>:<+|both>  the base at <offset> of every motif match; both = the reverse complement too
+       (the position then sits on the complementary base, like the collection's gt_minus files)"""
+    import pysam, re
+    fa = pysam.FastaFile(ref); out = set(); kind, _, rest = spec.partition(":")
+    if kind == "refbase":
+        want = {rest, COMP[rest]}
+        for ctg in fa.references:
+            seq = fa.fetch(ctg).upper(); out.update((ctg, i) for i, b in enumerate(seq) if b in want)
+        return out
+    motif, off, strands = rest.split(":"); off = int(off)
+    pats = [(re.compile("(?=" + "".join(IUPAC[c] for c in motif) + ")"), off)]
+    if strands == "both":
+        pats.append((re.compile("(?=" + "".join(IUPAC[c] for c in revcomp(motif)) + ")"), len(motif) - 1 - off))
     for ctg in fa.references:
-        s = fa.fetch(ctg).upper()
-        out.update((ctg, i) for i, b in enumerate(s) if b in want)
+        seq = fa.fetch(ctg).upper()
+        for pat, o in pats:
+            out.update((ctg, m.start() + o) for m in pat.finditer(seq))
     return out
 def covered(dsid, bed, mincov, out):
     """positions of `bed` covered by >= mincov reads of the sample's sub.bam (samtools depth -a -b)"""
@@ -78,11 +96,10 @@ for r in rows:
     # ---- ground truth and candidates, once per row
     gt_bed, cand_bed = os.path.join(R, "gt.bed"), os.path.join(R, "cand_all.bed")
     if a.force or not os.path.exists(cand_bed):
-        if r["gt"][0].startswith("refbase:"):
-            gt = refbase_positions(ref, r["gt"][0].split(":")[1]); cand = set(gt)
-        else:
-            gt = read_positions(r["gt"], refs)
-            cand = set(gt) if r["cand"] == ["same"] else read_positions(r["cand"], refs)
+        gt = spec_positions(r["gt"][0], ref) if r["gt"][0].startswith(("refbase:", "motif:")) else read_positions(r["gt"], refs)
+        if r["cand"] == ["same"]: cand = set(gt)
+        elif r["cand"][0].startswith(("refbase:", "motif:")): cand = spec_positions(r["cand"][0], ref)
+        else: cand = read_positions(r["cand"], refs)
         if r["context"] in ("cpg", "noncpg"):
             for name, S in (("gt", gt), ("cand", cand)):
                 tmp = os.path.join(R, f"{name}_in.bed"); write_bed(S, tmp)

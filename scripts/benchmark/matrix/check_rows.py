@@ -69,7 +69,7 @@ for r in rows:
         pos_ds = ds.get(r["datasets"][0]); files = {"gt": [], "cand": []}
         for col in ("gt", "cand"):
             for p in r[col]:
-                if p == "same" or p.startswith("refbase:"): continue
+                if p == "same" or p.startswith(("refbase:", "motif:")): continue
                 if not os.path.exists(p): missing(p, col)
                 else: files[col].append(p)
         if pysam and pos_ds and r["base"] != "N" and os.path.exists(pos_ds["ref"]):
