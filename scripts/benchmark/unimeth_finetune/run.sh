@@ -41,7 +41,7 @@ setup)
     eval "$ENVACT"
     [ -d $UM/.git ] || { echo "patched clone $UM missing: run unimeth_5hmU/run.sh MODE=setup first"; exit 1; }
     python $HERE/patch_labels.py $UM && python $REPO/scripts/benchmark/unimeth_5hmU/patch2_init_weights.py $UM
-    python -m unimeth.training --help 2>&1 | grep -q -- "--hmC" && echo "training CLI has --hmC/--m4C" || echo "FAIL: --hmC missing"
+    python -m unimeth.training --help 2>&1 | grep -q -- "--hmC" && echo "training CLI has --hmC/--m4C" || { echo "FAIL: --hmC missing (clone does not import?)"; python -c "import unimeth.training.__main__" 2>&1 | tail -3; exit 1; }
     for f in $POS_BAM $POS_POD5 $NEG_BAM $NEG_POD5 $SITES $BASE_CKPT; do [ -e $f ] && echo "  ok $f" || echo "  MISSING $f"; done ;;
 
 prep)
