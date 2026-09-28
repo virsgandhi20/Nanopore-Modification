@@ -6,7 +6,7 @@
 #   MODE=prep   [DS="ecoli_wt anabaena"] ...       # CPU jobs: reference copy, sorted BAM, first-NREADS subset (sub.bam);
 #                                                  # a BAM without move tables is first re-basecalled (GPU job, --emit-moves)
 #   MODE=infer  [TOOLS="unimeth_6mA"] [DS=...]     # GPU jobs, one per tool x sample, wait for that sample's prep
-#   MODE=score                                     # CPU job: score_matrix.py over everything that has finished
+#   MODE=score                                     # CPU job: score_matrix.py over everything that has finished (waits for queued cells; NOWAIT=1 to score now)
 #   MODE=all                                       # prep + infer for every sample and tool, then score
 #   MODE=status                                    # queue, what finished, the grid
 #   MODE=audit                                     # reads seen by each finished tool vs reads in the subset (catches truncated outputs)
@@ -94,6 +94,7 @@ infer)
 
 score)
     DEPS=$(for t in $TOOLS; do for d in $DS; do j=$(job_of infer:$t:$d); [ -n "$j" ] && [ -n "$(squeue -h -j $j 2>/dev/null)" ] && echo -n ":$j"; done; done)
+    [ -n "${NOWAIT:-}" ] && DEPS=""                                          # NOWAIT=1: score what is finished now; pending cells stay pending
     J=$(sub ${DEPS:+--dependency=afterany${DEPS}} $CPU --cpus-per-task=4 --mem=48G --time=06:00:00 --job-name=mtx_score --output=$W/logs/score_%j.log \
           --wrap="MODE=_score WBASE=$W TOOLS='$TOOLS' bash $HERE/run_matrix.sh")
     [ -n "$J" ] && { record score $J; echo "score: job $J${DEPS:+ (after$DEPS)}"; } ;;
