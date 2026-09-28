@@ -5,6 +5,8 @@
 #   NAME=hg002_10x POD5=<dir with .pod5> REF=<fasta> OUT=<dir> [NJOBS=24] [PART=cbcb] bash basecall_moves.sh
 #   (Bhargav, Sep 27: up to 100 concurrent jobs are fine, so use many shards)
 #   MODE=status NAME=... OUT=... bash basecall_moves.sh
+#   SHARDS="16 17 18" MERGE=0 ... bash basecall_moves.sh     submit only those shards (e.g. the pending half on the other partition)
+#   MODE=merge NAME=... OUT=... bash basecall_moves.sh        merge job that waits for every queued shard of this NAME
 # Result: $OUT/$NAME.moves.bam (+ .bai), coordinate-sorted, Dorado 1.4 sup v5 with --emit-moves, ready for datasets.tsv.
 # Each shard is written as .part and renamed on success, so a preempted shard restarts cleanly; finished shards are skipped.
 set -uo pipefail
@@ -24,7 +26,7 @@ run)
     find -L $POD5 -name '*.pod5' | sort > $OUT/lists/all.txt; N=$(wc -l < $OUT/lists/all.txt)
     [ $N -gt 0 ] || { echo "no pod5 files under $POD5"; exit 1; }
     echo "$N pod5 files -> $NJOBS shards"; JOBS=""
-    for i in $(seq 0 $((NJOBS - 1))); do
+    for i in ${SHARDS:-$(seq 0 $((NJOBS - 1)))}; do
         awk -v i=$i -v n=$NJOBS 'NR % n == i' $OUT/lists/all.txt > $OUT/lists/shard_$i.txt
         [ -s $OUT/lists/shard_$i.txt ] || continue
         [ -s $OUT/shards/shard_$i.bam ] && { echo "shard $i: done already"; continue; }
@@ -34,14 +36,23 @@ run)
                       $DORADO basecaller $DMODEL $OUT/shards/in_$i --emit-moves --reference $REF > $OUT/shards/shard_$i.part.bam && mv $OUT/shards/shard_$i.part.bam $OUT/shards/shard_$i.bam && echo \"shard $i OK: \$($SAM view -c $OUT/shards/shard_$i.bam) records\" || { rm -f $OUT/shards/shard_$i.part.bam; echo \"shard $i FAILED\"; exit 1; }")
         [ -n "$J" ] && { echo "shard $i: job $J ($(wc -l < $OUT/lists/shard_$i.txt) files)"; JOBS="$JOBS:$J"; }
     done
+    [ "${MERGE:-1}" = 0 ] && { echo "no merge submitted (MERGE=0): run MODE=merge once every shard is queued"; exit 0; }
     J=$(sub ${JOBS:+--dependency=afterok$JOBS} $CPU --cpus-per-task=8 --mem=48G --time=12:00:00 --job-name=bc_${NAME}_merge --output=$OUT/logs/merge_%j.log \
           --wrap="set -uo pipefail; ls $OUT/shards/shard_*.bam > $OUT/lists/done.txt; [ \$(wc -l < $OUT/lists/done.txt) -gt 0 ] || exit 1
                   $SAM cat -o $OUT/$NAME.unsorted.bam \$(cat $OUT/lists/done.txt) && $SAM sort -@ 8 -m 3G -T $OUT/tmp_sort -o $OUT/$NAME.moves.bam $OUT/$NAME.unsorted.bam && $SAM index $OUT/$NAME.moves.bam && rm -f $OUT/$NAME.unsorted.bam
                   echo \"merged: \$($SAM flagstat $OUT/$NAME.moves.bam | grep -m2 -E 'primary mapped|in total')\" > $OUT/status.txt; echo \"$NAME.moves.bam ready \$(date)\" >> $OUT/status.txt")
     echo "merge: job $J (after the shards); result: $OUT/$NAME.moves.bam" ;;
+merge)   # waits for every shard job of this NAME still in the queue (any partition), then merges
+    JOBS=$(squeue -h -u $USER -o "%i %j" | awk -v n="bc_${NAME}_" '$2 ~ "^"n"[0-9]+$"{printf ":%s", $1}')
+    J=$(sub ${JOBS:+--dependency=afterok$JOBS} $CPU --cpus-per-task=8 --mem=48G --time=12:00:00 --job-name=bc_${NAME}_merge --output=$OUT/logs/merge_%j.log \
+          --wrap="set -uo pipefail; ls $OUT/shards/shard_*.bam > $OUT/lists/done.txt; [ \$(wc -l < $OUT/lists/done.txt) -gt 0 ] || exit 1
+                  $SAM cat -o $OUT/$NAME.unsorted.bam \$(cat $OUT/lists/done.txt) && $SAM sort -@ 8 -m 3G -T $OUT/tmp_sort -o $OUT/$NAME.moves.bam $OUT/$NAME.unsorted.bam && $SAM index $OUT/$NAME.moves.bam && rm -f $OUT/$NAME.unsorted.bam
+                  echo \"merged: \$($SAM flagstat $OUT/$NAME.moves.bam | grep -m2 -E 'primary mapped|in total')\" > $OUT/status.txt; echo \"$NAME.moves.bam ready \$(date)\" >> $OUT/status.txt")
+    echo "merge: job $J (after shards${JOBS:-: none queued})" ;;
+
 status)
     squeue -u $USER -o "%.9i %.22j %.3t %.9M %R" | grep -E "bc_${NAME}|JOBID"
     echo "shards done: $(ls $OUT/shards/shard_*.bam 2>/dev/null | grep -vc part) of $(ls $OUT/lists/shard_*.txt 2>/dev/null | wc -l)"; cat $OUT/status.txt 2>/dev/null
     grep -h "FAILED\|rror" $OUT/logs/*.log 2>/dev/null | tail -5 ;;
-*) echo "MODE=run|status"; exit 1 ;;
+*) echo "MODE=run|merge|status"; exit 1 ;;
 esac
