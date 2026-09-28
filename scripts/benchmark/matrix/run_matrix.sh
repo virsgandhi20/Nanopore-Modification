@@ -71,7 +71,7 @@ basecall)   # GPU: Dorado sup v5 with --emit-moves, for samples whose collection
 prep)
     for d in $DS; do
         D=$W/$d; mkdir -p $D
-        [ -n "${FORCE:-}" ] && rm -f $D/status/prep.done $D/status/pod5_filtered
+        [ -n "${FORCE:-}" ] && rm -f $D/status/prep.done $D/status/pod5_filtered $D/reads.sorted.bam $D/reads.sorted.bam.bai $D/sub.bam $D/sub.bam.bai   # rebuild from the current source BAM
         [ -s $D/status/prep.done ] 2>/dev/null && { echo "prep $d: done already"; continue; }
         if [ ! -s $D/moves.bam ] && [ -z "$(job_of basecall:$d)" ] && ! has_moves ${BAM[$d]}; then
             echo "prep $d: source BAM has no move tables, submitting a basecall first"; MODE=basecall DS=$d WBASE=$W bash $HERE/run_matrix.sh; fi
@@ -168,6 +168,7 @@ _basecall)
     # (oligos: 121 move bases for 142 bases), and UniMeth silently drops every such read; untrimmed reads keep them aligned
     $DORADO basecaller $DMODEL ${POD5[$d]} --emit-moves ${NOTRIM:+--no-trim} --reference $D/ref.fa > $D/moves.unsorted.bam \
         && $SAM sort -@ 8 -m 2G -T $D/tmp_bc -o $D/moves.bam $D/moves.unsorted.bam && $SAM index $D/moves.bam && rm -f $D/moves.unsorted.bam \
+        && rm -f $D/reads.sorted.bam $D/reads.sorted.bam.bai $D/sub.bam $D/sub.bam.bai $D/status/prep.done \
         && echo "basecalled with move tables: $($SAM flagstat $D/moves.bam | grep -m1 'mapped (')" >> $D/status/prep.txt || { rm -f $D/moves.bam; echo 'basecall FAILED' >> $D/status/prep.txt; exit 1; } ;;
 
 _infer)
