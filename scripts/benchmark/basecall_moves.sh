@@ -8,7 +8,8 @@
 # Result: $OUT/$NAME.moves.bam (+ .bai), coordinate-sorted, Dorado 1.4 sup v5 with --emit-moves, ready for datasets.tsv.
 # Each shard is written as .part and renamed on success, so a preempted shard restarts cleanly; finished shards are skipped.
 set -uo pipefail
-NAME=${NAME:?}; POD5=${POD5:?}; REF=${REF:?}; OUT=${OUT:?}; NJOBS=${NJOBS:-24}; MODE=${MODE:-run}
+NAME=${NAME:?}; OUT=${OUT:?}; NJOBS=${NJOBS:-24}; MODE=${MODE:-run}; POD5=${POD5:-}; REF=${REF:-}
+[ $MODE = run ] && { : ${POD5:?set POD5=<dir with .pod5>}; : ${REF:?set REF=<indexed fasta>}; }
 ME=/fs/nexus-scratch/vgandhi
 DORADO=/fs/cbcb-lab/storm/shared/rawhash2/basecallers/dorado-1.4.0-linux-x64/bin/dorado; DMODEL=$ME/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v5.0.0
 SAM=/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools
