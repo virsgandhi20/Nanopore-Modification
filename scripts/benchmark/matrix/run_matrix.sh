@@ -5,7 +5,7 @@
 #   MODE=check  bash run_matrix.sh                 # login node: every path exists, ground truth sits on the right base
 #   MODE=prep   [DS="ecoli_wt anabaena"] ...       # CPU jobs: reference copy, sorted BAM, first-NREADS subset (sub.bam);
 #                                                  # a BAM without move tables is first re-basecalled (GPU job, --emit-moves)
-#   MODE=infer  [TOOLS="unimeth_6mA"] [DS=...]     # GPU jobs, one per tool x sample, wait for that sample's prep
+#   MODE=infer  [TOOLS="unimeth_6mA"] [DS=...]     # GPU jobs, one per tool x sample, wait for that sample's prep; a scoring job is queued behind them (NOSCORE=1 to skip)
 #   MODE=score                                     # CPU job: score_matrix.py over everything that has finished (waits for queued cells; NOWAIT=1 to score now)
 #   MODE=all                                       # prep + infer for every sample and tool, then score
 #   MODE=status                                    # queue, what finished, the grid
@@ -20,6 +20,7 @@ set -uo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd); HERE=$REPO/scripts/benchmark/matrix
 export CAT=/fs/cbcb-lab/storm/shared/data ME=/fs/nexus-scratch/vgandhi EUK=/fs/cbcb-lab/storm/vgandhi/euk UMBC=/fs/cbcb-lab/storm/shared/umbc-ont-data
 W=${WBASE:-/fs/cbcb-lab/storm/vgandhi/matrix}; mkdir -p $W/logs $W/status $W/rows
+ALLTOOLS="unimeth_5mC unimeth_6mA unimeth_5hmU unimeth_5hmC unimeth_4mC deepmod2 rockfish"     # every tool a scoring pass covers (missing outputs stay pending)
 TOOLS=${TOOLS:-"unimeth_5mC unimeth_6mA unimeth_5hmU deepmod2"}
 SAM=/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools
 ENVACT="source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $ME/envs/unimeth"
@@ -90,8 +91,10 @@ infer)
         esac
         J=$(sub $(dep prep:$d) $GPU $RES --time=08:00:00 --job-name=mtx_${t}_$d --output=$W/logs/${t}_${d}_%j.log \
               --wrap="MODE=_infer DSID=$d TOOL=$t WBASE=$W RF_ORIENT=$RF_ORIENT RF_SHIFT=$RF_SHIFT UM_BATCH=$UM_BATCH bash $HERE/run_matrix.sh")
-        [ -n "$J" ] && { record infer:$t:$d $J; echo "$t on $d: job $J $(dep prep:$d)"; }
-    done; done ;;
+        [ -n "$J" ] && { record infer:$t:$d $J; echo "$t on $d: job $J $(dep prep:$d)"; NEWJOBS=1; }
+    done; done
+    # every inference submission queues a scoring pass behind it (cells that finish with no scorer waiting stay unscored)
+    [ -n "${NEWJOBS:-}" ] && [ -z "${NOSCORE:-}" ] && MODE=score TOOLS="$ALLTOOLS" DS="${DSIDS[*]}" WBASE=$W bash $HERE/run_matrix.sh ;;
 
 score)
     DEPS=$(for t in $TOOLS; do for d in $DS; do j=$(job_of infer:$t:$d); [ -n "$j" ] && [ -n "$(squeue -h -j $j 2>/dev/null)" ] && echo -n ":$j"; done; done)
