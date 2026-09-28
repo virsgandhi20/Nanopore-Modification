@@ -37,13 +37,13 @@ UM_BATCH=${UM_BATCH:-256}                                                   # Un
 MODE=${MODE:-status}
 
 # ---- tables -> bash arrays (paths expanded by matrix_common.py so both sides read them the same way)
-declare -A GTDIR POD5 BAM REF NREADS REUSE; DSIDS=()
-while IFS=$'\t' read -r id gtdir pod5 bam ref nreads reuse; do
+declare -A GTDIR POD5 BAM REF NREADS REUSE RFROM; DSIDS=()
+while IFS=$'\t' read -r id gtdir pod5 bam ref nreads reuse rfrom; do
     [ -n "$id" ] && [ "${id:0:1}" != "#" ] || continue
-    DSIDS+=($id); GTDIR[$id]=$gtdir; POD5[$id]=$pod5; BAM[$id]=$bam; REF[$id]=$ref; NREADS[$id]=$nreads; REUSE[$id]=$reuse
+    DSIDS+=($id); GTDIR[$id]=$gtdir; POD5[$id]=$pod5; BAM[$id]=$bam; REF[$id]=$ref; NREADS[$id]=$nreads; REUSE[$id]=$reuse; RFROM[$id]=${rfrom:--}
 done < <(python -c "
 import sys; sys.path.insert(0, '$HERE'); from matrix_common import load_datasets
-for d in load_datasets('$HERE/datasets.tsv').values(): print('\t'.join(str(d[k]) for k in ('id','gtdir','pod5','bam','ref','nreads','reuse')))")
+for d in load_datasets('$HERE/datasets.tsv').values(): print('\t'.join(str(d[k]) for k in ('id','gtdir','pod5','bam','ref','nreads','reuse','region_from')))")
 [ ${#DSIDS[@]} -gt 0 ] || { echo "datasets.tsv could not be read (python + matrix_common.py?)"; exit 1; }
 DS=${DS:-${DSIDS[*]}}
 
@@ -140,7 +140,12 @@ _prep)
     elif [ ! -s $D/sub.bam ]; then
         if $SAM view -H $src | grep -q 'SO:coordinate'; then ln -sf $src $D/reads.sorted.bam; { [ -s $src.bai ] && ln -sf $src.bai $D/reads.sorted.bam.bai; } || $SAM index $D/reads.sorted.bam
         else $SAM sort -@ 8 -m 2G -T $D/tmp_sort -o $D/reads.sorted.bam $src && $SAM index $D/reads.sorted.bam || exit 1; fi
-        if [ $n -eq 0 ]; then ln -sf $D/reads.sorted.bam $D/sub.bam; ln -sf $D/reads.sorted.bam.bai $D/sub.bam.bai
+        RF=${RFROM[$d]}
+        if [ "$RF" != "-" ]; then      # same region as the other sample's subset (two-sample rows need matching coverage)
+            [ -s $W/$RF/sub.bam ] || { echo "region_from $RF has no sub.bam yet: prep $RF first" >> $D/status/prep.txt; exit 1; }
+            REG=$($SAM view $W/$RF/sub.bam | awk 'NR==1{c=$3; s=$4} {if($3==c){e=$4+length($10)}} END{print c":"s"-"e}')
+            $SAM view -b -o $D/sub.bam $D/reads.sorted.bam $REG && $SAM index $D/sub.bam && echo "subset = region $REG of $RF" >> $D/status/prep.txt || exit 1
+        elif [ $n -eq 0 ]; then ln -sf $D/reads.sorted.bam $D/sub.bam; ln -sf $D/reads.sorted.bam.bai $D/sub.bam.bai
         else $SAM view -h $D/reads.sorted.bam | awk -v n=$n '/^@/ {print; next} c<n {print; c++}' | $SAM view -b -o $D/sub.bam - && $SAM index $D/sub.bam || exit 1; fi
     fi
     # keep only reads whose signal is in the pod5 (the collection's oligo pod5s are per-replicate subsets of a BAM that

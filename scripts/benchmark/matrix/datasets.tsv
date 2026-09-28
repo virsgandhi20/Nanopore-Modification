@@ -3,13 +3,15 @@
 # alignments of the coordinate-sorted BAM (0 = every read). reuse = a folder under ${EUK} whose sub.bam / UniMeth 5mC /
 # DeepMod2 outputs are linked instead of recomputed (the plant/human rows already ran there). A BAM without move
 # tables (mv tags) is re-basecalled from the pod5 with --emit-moves by MODE=basecall (prep submits it when needed).
-#id	gtdir	pod5	bam	ref	nreads	reuse
+# region_from (optional 8th column): take this sample's subset from the region spanned by that sample's sub.bam instead of
+# its first NREADS alignments, so a two-sample row's control covers the same positions as its modified sample.
+#id	gtdir	pod5	bam	ref	nreads	reuse	region_from
 ecoli_wt	${CAT}/ecoli_k12_wt_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/ecoli_k12_wt_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/ecoli_k12_wt_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/ecoli_k12_wt_r10.4.1_ontbasemod_2024/ref.fa	15000	-
 ecoli_mssi	${CAT}/ecoli_k12_damdcm_mssi_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/ecoli_k12_damdcm_mssi_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/ecoli_k12_damdcm_mssi_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/ecoli_k12_damdcm_mssi_r10.4.1_ontbasemod_2024/ref.fa	15000	-
 anabaena	${CAT}/anabaena_pcc7120_wt_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/anabaena_pcc7120_wt_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/anabaena_pcc7120_wt_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/anabaena_pcc7120_wt_r10.4.1_ontbasemod_2024/ref.fa	15000	-
 tdenticola	${CAT}/tdenticola_atcc35405_wt_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/tdenticola_atcc35405_wt_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/tdenticola_atcc35405_wt_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/tdenticola_atcc35405_wt_r10.4.1_ontbasemod_2024/ref.fa	15000	-
 hp26695	${CAT}/hpylori_26695_wt_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/hpylori_26695_wt_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/hpylori_26695_wt_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/hpylori_26695_wt_r10.4.1_ontbasemod_2024/ref.fa	15000	-
-hp26695_wga	${CAT}/hpylori_26695_wga_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/hpylori_26695_wga_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/hpylori_26695_wga_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/hpylori_26695_wga_r10.4.1_ontbasemod_2024/ref.fa	15000	-
+hp26695_wga	${CAT}/hpylori_26695_wga_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/hpylori_26695_wga_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/hpylori_26695_wga_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/hpylori_26695_wga_r10.4.1_ontbasemod_2024/ref.fa	15000	-	hp26695
 hpj99	${CAT}/hpylori_j99_wt_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/hpylori_j99_wt_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/hpylori_j99_wt_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/hpylori_j99_wt_r10.4.1_ontbasemod_2024/ref.fa	15000	-
 arabidopsis	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/pod5_files	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/basecalled/reads.bam	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/ref.fa	15000	arabidopsis_col0_r10.4.1_ontbasemod_2024
 # hg002: the collection's ont_open_data folder is ~1x; the row uses the first 500 pod5_pass files of the public GIAB

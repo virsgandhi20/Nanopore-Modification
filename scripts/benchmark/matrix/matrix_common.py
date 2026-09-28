@@ -14,7 +14,7 @@ def load_datasets(path):
     ds = {}
     for c in _read(path, 7):
         ds[c[0]] = {"id": c[0], "gtdir": expand(c[1]), "pod5": expand(c[2]), "bam": expand(c[3]), "ref": expand(c[4]),
-                    "nreads": int(c[5]), "reuse": c[6]}
+                    "nreads": int(c[5]), "reuse": c[6], "region_from": c[7] if len(c) > 7 and c[7] else "-"}
     return ds
 def load_rows(path, datasets=None):
     rows = []
