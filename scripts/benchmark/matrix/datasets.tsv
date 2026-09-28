@@ -3,6 +3,8 @@
 # alignments of the coordinate-sorted BAM (0 = every read). reuse = a folder under ${EUK} whose sub.bam / UniMeth 5mC /
 # DeepMod2 outputs are linked instead of recomputed (the plant/human rows already ran there). A BAM without move
 # tables (mv tags) is re-basecalled from the pod5 with --emit-moves by MODE=basecall (prep submits it when needed).
+# syn_control and syn_5hmC use the 20% of reads held out of the 5hmC fine-tune (unimeth_finetune/run.sh prep), so every
+# tool is scored on reads that model never trained on; prep's pod5 filter cuts the subset to them.
 # region_from (optional 8th column): take this sample's subset from the region spanned by that sample's sub.bam instead of
 # its first NREADS alignments, so a two-sample row's control covers the same positions as its modified sample.
 #id	gtdir	pod5	bam	ref	nreads	reuse	region_from
@@ -18,9 +20,9 @@ arabidopsis	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/
 # flowcell (~11x, download_hg002.sh) basecalled with move tables by basecall_moves.sh, same GRCh38 ground truth.
 hg002	${CAT}/human_hg002_r10.4.1_ont_open_data/ground_truth	${CAT}/human_hg002_r10.4.1_giab_2023.05_PAO89685_10x/pod5_files	${CAT}/human_hg002_r10.4.1_giab_2023.05_PAO89685_10x/basecalled/hg002_10x.moves.bam	${CAT}/human_hg002_r10.4.1_ont_open_data/ref.fa	15000	-
 rice	${EUK}/ground_truth/osativa	/fs/cbcb-lab/storm/bds062/data/benchmark/osativa/pod5	${EUK}/bam/osativa.moves.bam	${EUK}/ref/osativa.fa	15000	osativa
-syn_control	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/control_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/control/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
+syn_control	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${ME}/unimeth_ft/5hmC/pod5/neg.test.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/control/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
 syn_5mC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/5mC_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5mC/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
-syn_5hmC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/5hmC_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5hmC/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
+syn_5hmC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${ME}/unimeth_ft/5hmC/pod5/pos.test.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5hmC/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
 syn_6mA	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/pod5_files/6mA_rep1.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/6mA/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
 spo1_bc07	-	${UMBC}/pod5_by_barcode/run1_jan31/single_end/barcode07.pod5	${ME}/unimeth_5hmU/bam/bc07.tagged.bam	${UMBC}/ref/SPO1_FJ230960.1.fasta	15000	-
 spo1_bc01	-	${UMBC}/pod5_by_barcode/run1_jan31/single_end/barcode01.pod5	${ME}/unimeth_5hmU/bam/bc01.tagged.bam	${UMBC}/ref/SPO1_FJ230960.1.fasta	15000	-

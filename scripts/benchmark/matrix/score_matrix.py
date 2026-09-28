@@ -115,7 +115,9 @@ for r in rows:
     gt = read_positions([gt_bed]); cand_pos = read_positions([cand_bed])
     # ---- coverage floor per sample (the tools could only have called what the reads cover)
     cov_bed = os.path.join(R, f"cand_cov{r['mincov']}.bed")
-    if a.force or not os.path.exists(cov_bed):
+    subs = [os.path.join(a.work, d, "sub.bam") for d in r["datasets"]]
+    stale = os.path.exists(cov_bed) and any(os.path.exists(b) and os.path.getmtime(b) > os.path.getmtime(cov_bed) for b in subs)
+    if a.force or not os.path.exists(cov_bed) or stale:                    # stale: a sample's subset was rebuilt since
         keep = covered(pos_ds, cand_bed, r["mincov"], cov_bed)
         if keep is None: log(f"[{r['row']}] no sub.bam for {pos_ds}, skipped"); continue
         cand = set(keep)
