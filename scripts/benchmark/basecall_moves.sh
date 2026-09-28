@@ -23,6 +23,8 @@ sub() { local id; id=$(sbatch --parsable $SB "$@") || { echo "sbatch failed" >&2
 case $MODE in
 run)
     [ -s $REF.fai ] || { echo "reference index missing: $REF.fai (copy the reference somewhere writable and run samtools faidx)"; exit 1; }
+    if [ -s $OUT/lists/njobs.txt ] && [ "$(cat $OUT/lists/njobs.txt)" != "$NJOBS" ]; then echo "this OUT was sharded with NJOBS=$(cat $OUT/lists/njobs.txt); pass the same NJOBS (a different split would overlap and skip files)"; exit 1; fi
+    echo $NJOBS > $OUT/lists/njobs.txt
     find -L $POD5 -name '*.pod5' | sort > $OUT/lists/all.txt; N=$(wc -l < $OUT/lists/all.txt)
     [ $N -gt 0 ] || { echo "no pod5 files under $POD5"; exit 1; }
     echo "$N pod5 files -> $NJOBS shards"; JOBS=""
