@@ -10,7 +10,8 @@
 #   MODE=all                                       # prep + infer for every sample and tool, then score
 #   MODE=status                                    # queue, what finished, the grid
 #   MODE=audit                                     # reads seen by each finished tool vs reads in the subset (catches truncated outputs)
-#   FORCE=1 with prep or infer redoes a finished sample / tool (prep also re-applies the pod5 read filter)
+#   FORCE=1 with prep or infer redoes a finished sample / tool (prep also re-applies the pod5 read filter); with basecall, redoes the BAM
+#   NOTRIM=1 with basecall passes --no-trim to Dorado (needed for the short oligo reads, see _basecall)
 #   PART=cbcb submits to the lab partition (qos high, any GPU) instead of scavenger; UniMeth then runs with --batch_size 64
 # Tools: unimeth_5mC (all-context model), unimeth_6mA, unimeth_5hmU / unimeth_5hmC / unimeth_4mC (fine-tuned, patched clone), deepmod2 (CpG),
 # rockfish (CpG; wired once its output format is known). Plant/human samples reuse the sub.bam, UniMeth 5mC and
@@ -60,10 +61,10 @@ check)
 
 basecall)   # GPU: Dorado sup v5 with --emit-moves, for samples whose collection BAM has no move tables (the oligo set)
     for d in $DS; do
-        D=$W/$d; mkdir -p $D
+        D=$W/$d; mkdir -p $D; [ -n "${FORCE:-}" ] && rm -f $D/moves.bam $D/moves.bam.bai $D/status/prep.done
         [ -s $D/moves.bam ] && { echo "basecall $d: $D/moves.bam exists"; continue; }
         J=$(sub $GPU --cpus-per-task=8 --mem=48G --time=08:00:00 --job-name=mtx_bc_$d --output=$W/logs/basecall_${d}_%j.log \
-              --wrap="MODE=_basecall DSID=$d WBASE=$W bash $HERE/run_matrix.sh")
+              --wrap="MODE=_basecall DSID=$d WBASE=$W NOTRIM=${NOTRIM:-} bash $HERE/run_matrix.sh")
         [ -n "$J" ] && { record basecall:$d $J; echo "basecall $d: job $J"; }
     done ;;
 
@@ -163,7 +164,9 @@ _prep)
 _basecall)
     d=$DSID; D=$W/$d; mkdir -p $D/status; set -x
     [ -s $D/ref.fa.fai ] || { cp -L ${REF[$d]} $D/ref.fa && $SAM faidx $D/ref.fa || exit 1; }
-    $DORADO basecaller $DMODEL ${POD5[$d]} --emit-moves --reference $D/ref.fa > $D/moves.unsorted.bam \
+    # NOTRIM=1: Dorado's adapter/primer trimming leaves the move table shorter than the trimmed sequence on short reads
+    # (oligos: 121 move bases for 142 bases), and UniMeth silently drops every such read; untrimmed reads keep them aligned
+    $DORADO basecaller $DMODEL ${POD5[$d]} --emit-moves ${NOTRIM:+--no-trim} --reference $D/ref.fa > $D/moves.unsorted.bam \
         && $SAM sort -@ 8 -m 2G -T $D/tmp_bc -o $D/moves.bam $D/moves.unsorted.bam && $SAM index $D/moves.bam && rm -f $D/moves.unsorted.bam \
         && echo "basecalled with move tables: $($SAM flagstat $D/moves.bam | grep -m1 'mapped (')" >> $D/status/prep.txt || { rm -f $D/moves.bam; echo 'basecall FAILED' >> $D/status/prep.txt; exit 1; } ;;
 
