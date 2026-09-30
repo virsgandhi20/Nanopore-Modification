@@ -72,7 +72,7 @@ basecall)   # GPU: Dorado sup v5 with --emit-moves, for samples whose collection
 prep)
     for d in $DS; do
         D=$W/$d; mkdir -p $D
-        [ -n "${FORCE:-}" ] && rm -f $D/status/prep.done $D/status/pod5_filtered $D/reads.sorted.bam $D/reads.sorted.bam.bai $D/sub.bam $D/sub.bam.bai   # rebuild from the current source BAM
+        [ -n "${FORCE:-}" ] && rm -f $D/status/prep.done $D/status/pod5_filtered $D/reads.sorted.bam $D/reads.sorted.bam.bai $D/sub.bam $D/sub.bam.bai $D/pod5_ids.txt $D/reads.inpod5.bam   # rebuild from the current source BAM
         [ -s $D/status/prep.done ] 2>/dev/null && { echo "prep $d: done already"; continue; }
         if [ ! -s $D/moves.bam ] && [ -z "$(job_of basecall:$d)" ] && ! has_moves ${BAM[$d]}; then
             echo "prep $d: source BAM has no move tables, submitting a basecall first"; MODE=basecall DS=$d WBASE=$W bash $HERE/run_matrix.sh; fi
@@ -140,8 +140,13 @@ _prep)
     RU=${REUSE[$d]}; src=${BAM[$d]}; n=${NREADS[$d]}; [ -s $D/moves.bam ] && src=$D/moves.bam
     if [ "$RU" != "-" ] && [ -s $EUK/$RU/ref.fa.fai ]; then ln -sf $EUK/$RU/ref.fa $D/ref.fa; ln -sf $EUK/$RU/ref.fa.fai $D/ref.fa.fai
     elif [ ! -s $D/ref.fa.fai ]; then cp -L ${REF[$d]} $D/ref.fa && $SAM faidx $D/ref.fa || exit 1; fi
+    [ -s $D/pod5_ids.txt ] || python $HERE/pod5_ids.py ${POD5[$d]} 2>> $D/status/prep.txt | sort -u > $D/pod5_ids.txt || exit 1
     if [ "$RU" != "-" ] && [ -s $EUK/$RU/sub.bam ]; then ln -sf $EUK/$RU/sub.bam $D/sub.bam; ln -sf $EUK/$RU/sub.bam.bai $D/sub.bam.bai; echo "sub.bam reused from $EUK/$RU" >> $D/status/prep.txt
     elif [ ! -s $D/sub.bam ]; then
+        if [ $(stat -Lc %s $src) -gt 20000000000 ] && ! $SAM view -H $src | grep -q 'SO:coordinate'; then   # huge unsorted BAM (a whole run): keep only the pod5's reads before sorting
+            [ -s $D/reads.inpod5.bam ] || $SAM view -@ 8 -b -N $D/pod5_ids.txt -o $D/reads.inpod5.bam $src || exit 1
+            echo "source BAM cut to the pod5's reads: $($SAM view -c $D/reads.inpod5.bam) records" >> $D/status/prep.txt; src=$D/reads.inpod5.bam
+        fi
         if $SAM view -H $src | grep -q 'SO:coordinate'; then ln -sf $src $D/reads.sorted.bam; { [ -s $src.bai ] && ln -sf $src.bai $D/reads.sorted.bam.bai; } || $SAM index $D/reads.sorted.bam
         else $SAM sort -@ 8 -m 2G -T $D/tmp_sort -o $D/reads.sorted.bam $src && $SAM index $D/reads.sorted.bam || exit 1; fi
         RF=${RFROM[$d]}
@@ -155,7 +160,6 @@ _prep)
     # keep only reads whose signal is in the pod5 (the collection's oligo pod5s are per-replicate subsets of a BAM that
     # covers the whole run; every tool skips or stalls on reads it cannot find, so all five must see the same reads)
     if [ ! -s $D/status/pod5_filtered ]; then
-        python $HERE/pod5_ids.py ${POD5[$d]} 2>> $D/status/prep.txt | sort -u > $D/pod5_ids.txt || exit 1
         n0=$($SAM view -c $D/sub.bam)
         $SAM view -b -N $D/pod5_ids.txt -o $D/sub.inpod5.bam $D/sub.bam && $SAM index $D/sub.inpod5.bam || exit 1
         rm -f $D/sub.bam $D/sub.bam.bai; mv $D/sub.inpod5.bam $D/sub.bam; mv $D/sub.inpod5.bam.bai $D/sub.bam.bai
