@@ -149,7 +149,7 @@ for r in rows:
             long_rows.append((r["row"], tool, metric, res["status"], res.get("n_sites", ""), res.get("n_pos", ""), res.get("pos_rate", ""),
                               res.get("auroc", ""), res.get("auprc", ""), res.get("filled", ""), res.get("detail", "")))
             # Bhargav (Sep 29): a tool that emitted nothing at all on a row is "not applicable", not 0.5; partial calls keep their number
-            if res["status"] == "ok" and res.get("filled") and res.get("n_sites") and int(res["filled"]) >= int(res["n_sites"]):
+            if res["status"] == "ok" and res.get("filled") and res.get("n_sites") and int(res["filled"]) >= 0.99 * int(res["n_sites"]):   # < 1% of candidates scored
                 res["status"] = "N/A"; long_rows[-1] = long_rows[-1][:3] + ("N/A",) + long_rows[-1][4:]
             if metric == primary: grid[(r["row"], tool)] = res.get("auroc", res["status"]) if res["status"] == "ok" else res["status"]
             log(f"  {tool:14s} {metric:9s} {res['status']:7s} AUROC {res.get('auroc', '-'):7s} AUPRC {res.get('auprc', '-'):7s} n {res.get('n_sites', '-'):>9s} filled {res.get('filled', '-'):>8s} {res.get('detail', '')}")
