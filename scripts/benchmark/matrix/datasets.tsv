@@ -23,6 +23,9 @@ hg002	${CAT}/human_hg002_r10.4.1_ont_open_data/ground_truth	${CAT}/human_hg002_r
 # rice: Ernest's 25-file pod5 subset (~11x), ONT's sup basecall of the whole run with move tables (cut to those reads by
 # prep), his ground truth from the ONT bisulfite call set, so the Dorado and UniMeth columns share reads and truth.
 rice	/fs/cbcb-lab/storm/ernzhang/rawmod_data/rice/ground_truth	/fs/cbcb-lab/storm/ernzhang/rawmod_data/rice/pod5	/fs/cbcb-lab/storm/ernzhang/rawmod_data/rice/basecalled/osjaponica_5kHz_sup_v5r3.bam	${EUK}/ref/osativa.fa	15000	-
+# mouse: Ernest's read subset selected over candidate CpG sites (mouse_candidates.pod5, 30x brain run), his sup basecall with
+# move tables on mm39, and the positives/candidates his Dorado number used (from the chr1 bisulfite 20x call set).
+mouse	/fs/cbcb-lab/storm/ernzhang/rawmod_data/mouse	/fs/cbcb-lab/storm/ernzhang/rawmod_data/mouse/mouse_candidates.pod5	/fs/cbcb-lab/storm/ernzhang/rawmod_data/mouse/mouse_sup_moves.sorted.bam	/fs/cbcb-lab/storm/ernzhang/rawmod_data/mouse/mouse_mm39.fa	0	-
 syn_control	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${ME}/unimeth_ft/5hmC/pod5/neg.test.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/control/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
 syn_5mC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${ME}/unimeth_ft/5hmC/pod5/syn_5mC.test.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5mC/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-
 syn_5hmC	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ground_truth	${ME}/unimeth_ft/5hmC/pod5/pos.test.pod5	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/basecalled/5hmC/reads_refined.bam	${CAT}/synthetic_all5mers_r10.4.1_ont_open_data/ref.fa	0	-

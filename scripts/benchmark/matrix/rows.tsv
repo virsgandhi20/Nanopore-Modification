@@ -22,6 +22,7 @@ arabidopsis_cpg	5mC	C	one	arabidopsis	cpg	gt_plus.bed,gt_minus.bed	cand_plus.bed
 arabidopsis_noncpg	5mC	C	one	arabidopsis	noncpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	bisulfite call set (9 positives in the region)
 hg002_cpg	5mC	C	one	hg002	cpg	gt_plus.bed,gt_minus.bed	cand_plus.bed,cand_minus.bed	10	~1x: floor pending (Bhargav)
 rice_cpg	5mC	C	one	rice	all	rice_gt_positive_plus.tsv	rice_candidates_cpg_plus.tsv	10	Ernest's ONT bisulfite (20x) CpG call set, plus-strand positions; 11x reads
+mouse_cpg	5mC	C	one	mouse	all	mouse_gt_positive_plus.tsv	mouse_candidates_2col_plus.tsv	10	Ernest's chr1 bisulfite (20x) positives/candidates, plus strand, read subset over candidate sites (his Dorado run used --min-reads 5)
 syn_5mC	5mC	C	two	syn_5mC,syn_control	all	all_5mers_5mC_sites.bed	same	10	ONT all-5mers oligos
 syn_5hmC	5hmC	C	two	syn_5hmC,syn_control	all	all_5mers_5hmC_sites.bed	same	10	ONT all-5mers oligos
 syn_6mA	6mA	A	two	syn_6mA,syn_control	all	all_5mers_6mA_sites.bed	same	10	ONT all-5mers oligos
