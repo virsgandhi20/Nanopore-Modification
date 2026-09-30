@@ -5,7 +5,7 @@ For each row: resolve the ground truth (files, or every T for refbase rows), spl
 candidate set (two-sample rows: the same positions on the control sample under NEG_-prefixed contigs), keep only
 candidates covered by >= mincov reads of the sample's sub.bam (samtools depth), then run score_sites.py with
 --fill-missing twice per tool: score = call frequency, and score = mean P. Positions the tool never scored count as
-unmodified, which is how a tool with no model for the row's chemistry lands at 0.5 instead of N/A.
+unmodified; a tool that scored none of a row's candidates is reported as N/A (Bhargav, Sep 29), partial coverage keeps its number.
 
 Writes <work>/matrix_long.tsv (one line per row x tool x metric) and <work>/matrix_grid.tsv (rows x tools, the
 tool's primary metric: mean P for UniMeth models, call frequency for the others).
@@ -148,7 +148,10 @@ for r in rows:
                                              capture_output=True, text=True))
             long_rows.append((r["row"], tool, metric, res["status"], res.get("n_sites", ""), res.get("n_pos", ""), res.get("pos_rate", ""),
                               res.get("auroc", ""), res.get("auprc", ""), res.get("filled", ""), res.get("detail", "")))
-            if metric == primary: grid[(r["row"], tool)] = res.get("auroc", res["status"])
+            # Bhargav (Sep 29): a tool that emitted nothing at all on a row is "not applicable", not 0.5; partial calls keep their number
+            if res["status"] == "ok" and res.get("filled") and res.get("n_sites") and int(res["filled"]) >= int(res["n_sites"]):
+                res["status"] = "N/A"; long_rows[-1] = long_rows[-1][:3] + ("N/A",) + long_rows[-1][4:]
+            if metric == primary: grid[(r["row"], tool)] = res.get("auroc", res["status"]) if res["status"] == "ok" else res["status"]
             log(f"  {tool:14s} {metric:9s} {res['status']:7s} AUROC {res.get('auroc', '-'):7s} AUPRC {res.get('auprc', '-'):7s} n {res.get('n_sites', '-'):>9s} filled {res.get('filled', '-'):>8s} {res.get('detail', '')}")
 # a partial run (--only, or a tool whose sites are missing) keeps the earlier results of the rows and cells it did not touch
 long_path, grid_path = os.path.join(a.work, "matrix_long.tsv"), os.path.join(a.work, "matrix_grid.tsv")
