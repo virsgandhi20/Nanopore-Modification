@@ -143,7 +143,7 @@ _prep)
     [ -s $D/pod5_ids.txt ] || python $HERE/pod5_ids.py ${POD5[$d]} 2>> $D/status/prep.txt | sort -u > $D/pod5_ids.txt || exit 1
     if [ "$RU" != "-" ] && [ -s $EUK/$RU/sub.bam ]; then ln -sf $EUK/$RU/sub.bam $D/sub.bam; ln -sf $EUK/$RU/sub.bam.bai $D/sub.bam.bai; echo "sub.bam reused from $EUK/$RU" >> $D/status/prep.txt
     elif [ ! -s $D/sub.bam ]; then
-        if [ $(stat -Lc %s $src) -gt 20000000000 ] && ! $SAM view -H $src | grep -q 'SO:coordinate'; then   # huge unsorted BAM (a whole run): keep only the pod5's reads before sorting
+        if [ $(stat -Lc %s $src) -gt 20000000000 ]; then   # a whole-run BAM: keep only the pod5's reads first, or the first N alignments hold almost no read with signal (rice: 1,093 of 15,000)
             [ -s $D/reads.inpod5.bam ] || $SAM view -@ 8 -b -N $D/pod5_ids.txt -o $D/reads.inpod5.bam $src || exit 1
             echo "source BAM cut to the pod5's reads: $($SAM view -c $D/reads.inpod5.bam) records" >> $D/status/prep.txt; src=$D/reads.inpod5.bam
         fi
