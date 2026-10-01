@@ -32,6 +32,8 @@ run)
         awk -v i=$i -v n=$NJOBS 'NR % n == i' $OUT/lists/all.txt > $OUT/lists/shard_$i.txt
         [ -s $OUT/lists/shard_$i.txt ] || continue
         [ -s $OUT/shards/shard_$i.bam ] && { echo "shard $i: done already"; continue; }
+        q=$(squeue -h -u $USER -n bc_${NAME}_$i -o %i 2>/dev/null | head -1)      # a second submission would write the same .part file
+        [ -n "$q" ] && { echo "shard $i: already queued or running as job $q, not resubmitting"; JOBS="$JOBS:$q"; continue; }
         J=$(sub $GPU --cpus-per-task=8 --mem=48G --time=12:00:00 --job-name=bc_${NAME}_$i --output=$OUT/logs/shard_${i}_%j.log \
               --wrap="set -uo pipefail; mkdir -p $OUT/shards/in_$i; rm -f $OUT/shards/in_$i/*; while read f; do ln -sf \$f $OUT/shards/in_$i/; done < $OUT/lists/shard_$i.txt
                       rm -f $OUT/shards/shard_$i.part.bam
@@ -39,6 +41,8 @@ run)
         [ -n "$J" ] && { echo "shard $i: job $J ($(wc -l < $OUT/lists/shard_$i.txt) files)"; JOBS="$JOBS:$J"; }
     done
     [ "${MERGE:-1}" = 0 ] && { echo "no merge submitted (MERGE=0): run MODE=merge once every shard is queued"; exit 0; }
+    q=$(squeue -h -u $USER -n bc_${NAME}_merge -o %i 2>/dev/null | head -1)
+    [ -n "$q" ] && { echo "merge: already queued as job $q"; exit 0; }
     J=$(sub ${JOBS:+--dependency=afterok$JOBS} $CPU --cpus-per-task=8 --mem=48G --time=12:00:00 --job-name=bc_${NAME}_merge --output=$OUT/logs/merge_%j.log \
           --wrap="set -uo pipefail; ls $OUT/shards/shard_*.bam > $OUT/lists/done.txt; [ \$(wc -l < $OUT/lists/done.txt) -gt 0 ] || exit 1
                   $SAM cat -o $OUT/$NAME.unsorted.bam \$(cat $OUT/lists/done.txt) && $SAM sort -@ 8 -m 3G -T $OUT/tmp_sort -o $OUT/$NAME.moves.bam $OUT/$NAME.unsorted.bam && $SAM index $OUT/$NAME.moves.bam && rm -f $OUT/$NAME.unsorted.bam

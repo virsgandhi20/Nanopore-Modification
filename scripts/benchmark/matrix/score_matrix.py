@@ -99,7 +99,9 @@ for r in rows:
     # ---- ground truth and candidates, once per row
     gt_bed, cand_bed = os.path.join(R, "gt.bed"), os.path.join(R, "cand_all.bed")
     if a.force or not os.path.exists(cand_bed):
-        gt = spec_positions(r["gt"][0], ref) if r["gt"][0].startswith(("refbase:", "motif:")) else read_positions(r["gt"], refs)
+        if all(p.startswith(("refbase:", "motif:")) for p in r["gt"]):   # one or more motif/refbase specs: their union
+            gt = set().union(*(spec_positions(p, ref) for p in r["gt"]))
+        else: gt = read_positions(r["gt"], refs)
         if r["cand"] == ["same"]: cand = set(gt)
         elif r["cand"][0].startswith(("refbase:", "motif:")): cand = spec_positions(r["cand"][0], ref)
         else: cand = read_positions(r["cand"], refs)
