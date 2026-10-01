@@ -100,7 +100,7 @@ score)
     DEPS=$(for t in $TOOLS; do for d in $DS; do j=$(job_of infer:$t:$d); [ -n "$j" ] && [ -n "$(squeue -h -j $j 2>/dev/null)" ] && echo -n ":$j"; done; done)
     [ -n "${NOWAIT:-}" ] && DEPS=""                                          # NOWAIT=1: score what is finished now; pending cells stay pending
     J=$(sub ${DEPS:+--dependency=afterany${DEPS}} $CPU --cpus-per-task=4 --mem=48G --time=06:00:00 --job-name=mtx_score --output=$W/logs/score_%j.log \
-          --wrap="MODE=_score WBASE=$W TOOLS='$TOOLS' bash $HERE/run_matrix.sh")
+          --wrap="MODE=_score WBASE=$W TOOLS='$TOOLS' CPGMERGE='${CPGMERGE:-}' bash $HERE/run_matrix.sh")
     [ -n "$J" ] && { record score $J; echo "score: job $J${DEPS:+ (after$DEPS)}"; } ;;
 
 all)
@@ -220,7 +220,10 @@ _infer)
     echo "$t on $d finished $(date): $(wc -l < $T/sites.std.tsv) site rows" ;;
 
 _score)
-    eval "$ENVACT"; python $HERE/score_matrix.py --work $W --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --tools "$TOOLS" --repo $REPO --samtools $SAM 2>&1 | tee $W/status/score.txt ;;
+    # CPGMERGE=row1,row2: variant scoring of CpG rows with both strands of a CpG summed before the floor; written to
+    # matrix_{long,grid}_cpgmerge.tsv and status/score_cpgmerge.txt, the main results are untouched
+    EXTRA=""; SFX=""; [ -n "${CPGMERGE:-}" ] && { EXTRA="--cpg-merge $CPGMERGE --only $CPGMERGE --suffix _cpgmerge"; SFX=_cpgmerge; }
+    eval "$ENVACT"; python $HERE/score_matrix.py --work $W --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --tools "$TOOLS" --repo $REPO --samtools $SAM $EXTRA 2>&1 | tee $W/status/score$SFX.txt ;;
 
 *)  echo "MODE must be check | basecall | prep | infer | score | audit | all | status"; exit 1 ;;
 esac
