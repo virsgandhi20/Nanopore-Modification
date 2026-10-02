@@ -22,7 +22,7 @@ arabidopsis	${CAT}/arabidopsis_col0_r10.4.1_ontbasemod_2024/ground_truth	${CAT}/
 hg002	${CAT}/human_hg002_r10.4.1_ont_open_data/ground_truth	${CAT}/human_hg002_r10.4.1_giab_2023.05_PAO89685_10x/pod5_files	${CAT}/human_hg002_r10.4.1_giab_2023.05_PAO89685_10x/basecalled/hg002_10x.moves.bam	${CAT}/human_hg002_r10.4.1_ont_open_data/ref.fa	15000	-
 # rice: Ernest's 25-file pod5 subset (~11x), ONT's sup basecall of the whole run with move tables (cut to those reads by
 # prep), his ground truth from the ONT bisulfite call set, so the Dorado and UniMeth columns share reads and truth.
-rice	/fs/cbcb-lab/storm/ernzhang/rawmod_data/rice/ground_truth	/fs/cbcb-lab/storm/ernzhang/rawmod_data/rice/pod5	/fs/cbcb-lab/storm/ernzhang/rawmod_data/rice/basecalled/osjaponica_5kHz_sup_v5r3.bam	${EUK}/ref/osativa.fa	15000	-
+rice	/fs/cbcb-lab/storm/ernzhang/rawmod_data/rice/ground_truth	/fs/cbcb-lab/storm/ernzhang/rawmod_data/rice/pod5	/fs/cbcb-lab/storm/vgandhi/euk/rice_bc/rice_dorado.moves.bam	${EUK}/ref/osativa.fa	15000	-
 # mouse: Ernest's read subset selected over candidate CpG sites (mouse_candidates.pod5, 30x brain run), his sup basecall with
 # move tables on mm39, and the positives/candidates his Dorado number used (from the chr1 bisulfite 20x call set).
 mouse	/fs/cbcb-lab/storm/ernzhang/rawmod_data/mouse	/fs/cbcb-lab/storm/ernzhang/rawmod_data/mouse/mouse_candidates.pod5	/fs/cbcb-lab/storm/ernzhang/rawmod_data/mouse/mouse_sup_moves.sorted.bam	/fs/cbcb-lab/storm/ernzhang/rawmod_data/mouse/mouse_mm39.fa	0	-
