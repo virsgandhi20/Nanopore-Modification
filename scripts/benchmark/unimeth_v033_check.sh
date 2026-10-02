@@ -24,7 +24,12 @@ setup)
     conda activate $ENV
     python -m pip install --only-binary=:all: "pod5==0.3.44" "lib-pod5==0.3.44" "pyarrow>=22,<23" || exit 1   # README: pod5/pyarrow pins
     (cd $SRC && python -m pip install .) || exit 1
-    unimeth infer --help > $OUT/infer_help.txt 2>&1 && echo "setup OK: $(unimeth --version 2>/dev/null || grep -m1 -i version $OUT/infer_help.txt)"; echo "help saved to $OUT/infer_help.txt" ;;
+    unimeth infer --help > $OUT/infer_help.txt 2>&1 && echo "setup OK: $(unimeth --version 2>/dev/null || grep -m1 -i version $OUT/infer_help.txt)"; echo "help saved to $OUT/infer_help.txt"
+    # the fine-tuned checkpoints carry an 18-token vocabulary: a second clone with the inference-side 5hmU patch, used via PYTHONPATH
+    P=$ME/Unimeth_0.3.3_patched
+    [ -d $P ] || git clone --depth 1 --branch 0.3.3 https://github.com/sekeyWang/Unimeth.git $P || exit 1
+    python $HERE/unimeth_5hmU/patch_unimeth_033_infer.py $P || exit 1
+    PYTHONPATH=$P python -c "from unimeth.config import TOKENIZER; print('patched clone OK, vocab size', len(TOKENIZER))" ;;
 run)
     # ds  tool  row  model  flags  types
     while read ds tool row model flags types; do

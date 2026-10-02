@@ -23,8 +23,8 @@ W=${WBASE:-/fs/cbcb-lab/storm/vgandhi/matrix}; mkdir -p $W/logs $W/status $W/row
 ALLTOOLS="unimeth_5mC unimeth_6mA unimeth_5hmU unimeth_5hmC unimeth_4mC deepmod2 rockfish"     # every tool a scoring pass covers (missing outputs stay pending)
 TOOLS=${TOOLS:-"unimeth_5mC unimeth_6mA unimeth_5hmU deepmod2"}
 SAM=/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools
-ENVACT="source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $ME/envs/unimeth"
-UM_HMU=$ME/Unimeth_5hmU                                   # patched clone ([5hmU] token, --hmU); shadows the package via PYTHONPATH
+ENVACT="source $HOME/miniconda3/etc/profile.d/conda.sh; conda activate $ME/envs/unimeth033"   # UniMeth 0.3.3 (normalization fix, their issue 21); built by unimeth_v033_check.sh MODE=setup
+UM_PATCHED=$ME/Unimeth_0.3.3_patched                      # v0.3.3 clone + patch_unimeth_033_infer.py (18-token vocabulary of the fine-tuned checkpoints, --hmU); shadows the package via PYTHONPATH
 MODELS=$ME/unimeth_models/checkpoints
 M_5mC=$MODELS/unimeth_r10.4.1_5kHz_5mC.pt; M_6mA=$MODELS/unimeth_r10.4.1_5kHz_6mA.pt
 M_5hmU=${M_5hmU:-$ME/unimeth_5hmU/runs/hmu_0922_1446_from1000_from1500/final.pt}     # the 3,000-step model (0.7725 held out)
@@ -186,14 +186,13 @@ _infer)
     unimeth_5mC|unimeth_6mA|unimeth_5hmU|unimeth_5hmC|unimeth_4mC)
         eval "$ENVACT"
         case $t in
-            unimeth_5mC)  M=$M_5mC;  FLAGS="--cpg 1 --chg 1 --chh 1"; TYPES='[CpG],[CHG],[CHH]'; CMD="unimeth-infer"
-                          [ "$RU" != "-" ] && [ -s $EUK/$RU/unimeth/calls.txt ] && [ ! -s $T/calls.txt ] && ln -sf $EUK/$RU/unimeth/calls.txt $T/calls.txt ;;
-            unimeth_6mA)  M=$M_6mA;  FLAGS="--cpg 0 --chg 0 --chh 0 --m6A 1"; TYPES='[m6A]'; CMD="unimeth-infer" ;;
-            unimeth_5hmU) M=$M_5hmU; FLAGS="--cpg 0 --chg 0 --chh 0 --hmU 1"; TYPES='[5hmU]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_HMU ;;
-            unimeth_5hmC|unimeth_4mC) M=$( [ $t = unimeth_5hmC ] && echo $M_5hmC || echo $M_4mC ); FLAGS="--cpg 1 --chg 1 --chh 1"; TYPES='[CpG],[CHG],[CHH]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_HMU ;;   # fine-tuned all-context C models
+            unimeth_5mC)  M=$M_5mC;  FLAGS="--cpg 1 --chg 1 --chh 1"; TYPES='[CpG],[CHG],[CHH]'; CMD="unimeth infer" ;;
+            unimeth_6mA)  M=$M_6mA;  FLAGS="--cpg 0 --chg 0 --chh 0 --m6A 1"; TYPES='[m6A]'; CMD="unimeth infer" ;;
+            unimeth_5hmU) M=$M_5hmU; FLAGS="--cpg 0 --chg 0 --chh 0 --hmU 1"; TYPES='[5hmU]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_PATCHED ;;
+            unimeth_5hmC|unimeth_4mC) M=$( [ $t = unimeth_5hmC ] && echo $M_5hmC || echo $M_4mC ); FLAGS="--cpg 1 --chg 1 --chh 1"; TYPES='[CpG],[CHG],[CHH]'; CMD="python -m unimeth.inference"; export PYTHONPATH=$UM_PATCHED ;;   # fine-tuned all-context C models
         esac
         [ -s $M ] || { echo "model missing: $M" > $T/FAILED; exit 1; }
-        [ -s $T/calls.txt ] || { rm -f $T/part.txt; PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True $CMD --pod5 ${POD5[$d]} --bam $D/sub.bam --model $M --pore_type R10.4.1 --frequency 4khz $FLAGS --batch_size $UM_BATCH --output_format tsv --out $T/part.txt --num_workers 8 --signal_index $T/signal-index.sqlite > $T/infer.log 2>&1 \
+        [ -s $T/calls.txt ] || { rm -f $T/part.txt; PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True $CMD --pod5 ${POD5[$d]} --bam $D/sub.bam --model $M --pore_type R10.4.1 --frequency 5khz $FLAGS --batch_size $UM_BATCH --output_format tsv --out $T/part.txt --num_workers 8 --signal_index $T/signal-index.sqlite > $T/infer.log 2>&1 \
             && mv $T/part.txt $T/calls.txt || { echo "inference failed: $(grep -iE 'error' $T/infer.log | tail -1)" > $T/FAILED; exit 1; }; }
         python $HERE/sites_std.py --tool unimeth --types "$TYPES" $T/calls.txt $T/sites.std.tsv > $T/std.log 2>&1 || { echo "sites_std failed: $(tail -1 $T/std.log)" > $T/FAILED; exit 1; } ;;
     deepmod2)
