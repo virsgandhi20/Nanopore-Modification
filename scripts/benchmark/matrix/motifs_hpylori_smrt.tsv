@@ -7,7 +7,7 @@
 # strain	motif	offset	type	pct	enzyme	use
 26695	ACANNNNNNNNTAG	2	6mA	98.8	M.HpyAXIII	yes
 26695	ACANNNNNNNNTAG	11	6mA	98.8	M.HpyAXIII (other strand)	yes
-26695	CCTC	0	5mC	80.1	M2.HpyAVI	yes
+26695	CCTC	0	5mC	80.1	M2.HpyAVI (one site in five unmethylated by SMRT, Dorado agrees at 79.9%: too noisy as all-positive truth)	no
 26695	CCTC	2	6mA	99.1	M1.HpyAVI (GGAG strand)	yes
 26695	CCTTC	1	5mC	91.9	M.HpyAV	yes
 26695	CCTTC	2	6mA	96.0	M.HpyAV (GGAAG strand)	yes
