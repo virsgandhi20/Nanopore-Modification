@@ -1,0 +1,46 @@
+# H. pylori methylation motifs from the SMRT methylomes of Krebes et al. 2014 (NAR, PMC3936762), Tables 1-2: the
+# independent ground truth for the 26695 and J99 rows (replaces the Dorado-derived differential sets and the REBASE
+# presets that were unmethylated in the samples). offset = 0-based index of the modified base in the motif as written
+# 5'->3'; for a modified base on the complementary strand the offset points at the top-strand base it pairs with
+# (spec_positions 'both' handles the orientation). pct = % of motif sites detected methylated by SMRT. Frameshift-repair
+# specificities (inactive in the wild type) are left out; GCGC (m5C, ~50% methylated) is listed but excluded from truth.
+# strain	motif	offset	type	pct	enzyme	use
+26695	ACANNNNNNNNTAG	2	6mA	98.8	M.HpyAXIII	yes
+26695	ACANNNNNNNNTAG	11	6mA	98.8	M.HpyAXIII (other strand)	yes
+26695	CCTC	0	5mC	80.1	M2.HpyAVI	yes
+26695	CCTC	2	6mA	99.1	M1.HpyAVI (GGAG strand)	yes
+26695	CCTTC	1	5mC	91.9	M.HpyAV	yes
+26695	CCTTC	2	6mA	96.0	M.HpyAV (GGAAG strand)	yes
+26695	GATC	1	6mA	99.4	M.HpyAIII	yes
+26695	TCGA	3	6mA	98.8	M.HpyAX	yes
+26695	ATTAAT	4	6mA	98.5	M.HpyAVII	yes
+26695	GCGC	1	5mC	50.5	M.HpyAVIII	no
+26695	CATG	1	6mA	99.7	M.HpyAI	yes
+26695	GANTC	1	6mA	99.6	M.HpyAIV	yes
+26695	GAAGA	4	6mA	99.7	M1.HpyAII	yes
+26695	GAAGA	3	4mC	95.2	M2.HpyAII (TCTTC strand)	yes
+26695	GCGTA	4	6mA	99.4	HpyAXIV	yes
+26695	GCAG	2	6mA	99.4	M.HpyAXI	yes
+26695	CGRAT	3	6mA	98.9	unassigned	yes
+J99	AAGNNNNNNCTC	1	6mA	99.8	M.Hpy99XVII	yes
+J99	AAGNNNNNNCTC	10	6mA	98.8	M.Hpy99XVII (other strand)	yes
+J99	RTAYNNNNNRTAY	2	6mA	98.1	M.Hpy99XVI	yes
+J99	AAGNNNNNCTT	1	6mA	99.6	M.Hpy99XV	yes
+J99	AAGNNNNNNTAAAG	1	6mA	99.3	M.Hpy99XV	yes
+J99	AAGNNNNNNTAAAG	9	6mA	99.7	M.Hpy99XV (other strand)	yes
+J99	CTCC	1	6mA	99.3	M1.Hpy99V (GGAG strand)	yes
+J99	GTSAC	3	6mA	96.7	M.Hpy99II	yes
+J99	GATC	1	6mA	99.8	M.Hpy99VI	yes
+J99	TCGA	3	6mA	96.9	M.Hpy99VII	yes
+J99	CCGG	0	4mC	98.8	M.Hpy99VIII	yes
+J99	ATTAAT	4	6mA	98.5	M.Hpy99XIX	yes
+J99	ACGT	1	5mC	76.5	M.Hpy99XI	yes
+J99	GTAC	2	6mA	96.5	M.Hpy99XII	yes
+J99	CCNNGG	0	4mC	96.9	M.Hpy99IV	yes
+J99	CGWCG	0	4mC	84.4	M.Hpy99I (modified C position to confirm)	check
+J99	TCNNGA	4	6mA	98.3	M.Hpy99XVIII	yes
+J99	GCGC	1	5mC	54.0	M.Hpy99III	no
+J99	CATG	1	6mA	99.8	M.Hpy99X	yes
+J99	GANTC	1	6mA	99.5	M.Hpy99IX	yes
+J99	GGWTAA	5	6mA	99.2	Hpy99XIV	yes
+J99	GCCTA	4	6mA	99.7	Hpy99XIII	yes
