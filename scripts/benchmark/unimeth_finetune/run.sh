@@ -15,7 +15,7 @@
 set -uo pipefail
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd); HERE=$REPO/scripts/benchmark/unimeth_finetune; MX=$REPO/scripts/benchmark/matrix
 ME=/fs/nexus-scratch/vgandhi; CAT=/fs/cbcb-lab/storm/shared/data; MATRIX=/fs/cbcb-lab/storm/vgandhi/matrix
-CHEM=${CHEM:?set CHEM=5hmC or CHEM=4mC}; W=${W:-$ME/unimeth_ft/$CHEM}; mkdir -p $W/{logs,status,runs,pod5,bam}
+CHEM=${CHEM:?set CHEM=5hmC, 4mC or 4mC_smrt}; W=${W:-$ME/unimeth_ft/$CHEM}; mkdir -p $W/{logs,status,runs,pod5,bam}
 UM=$ME/Unimeth_5hmU                                     # the patched clone (5hmU patch + label patch); PYTHONPATH shadows the package
 BASE_CKPT=$ME/unimeth_models/checkpoints/unimeth_r10.4.1_5kHz_5mC.pt
 SAM=/fs/cbcb-software/RedHat-8-x86_64/local/samtools/1.16/bin/samtools
@@ -33,7 +33,11 @@ case $CHEM in
 4mC)  HP=$CAT/hpylori_26695_wt_r10.4.1_ontbasemod_2024; HPW=$CAT/hpylori_26695_wga_r10.4.1_ontbasemod_2024
       POS_BAM=$HP/basecalled/reads.bam; POS_POD5=$HP/pod5_files; NEG_BAM=$HPW/basecalled/reads.bam; NEG_POD5=$HPW/pod5_files
       SITES=$ME/hp_labels/gt_4mC.bed; CODE=21839; FLAG="--m4C 1"; HOLDOUT=region ;;
-*) echo "CHEM must be 5hmC or 4mC"; exit 1 ;;
+4mC_smrt)  # same samples, labels from the SMRT methylome motif (GAAGA / TCTTC) instead of Dorado's differential calls
+      HP=$CAT/hpylori_26695_wt_r10.4.1_ontbasemod_2024; HPW=$CAT/hpylori_26695_wga_r10.4.1_ontbasemod_2024
+      POS_BAM=$HP/basecalled/reads.bam; POS_POD5=$HP/pod5_files; NEG_BAM=$HPW/basecalled/reads.bam; NEG_POD5=$HPW/pod5_files
+      SITES=$ME/hp_labels/smrt_4mC_26695.bed; CODE=21839; FLAG="--m4C 1"; HOLDOUT=region ;;
+*) echo "CHEM must be 5hmC, 4mC or 4mC_smrt"; exit 1 ;;
 esac
 COMMON="--pore_type R10.4.1 --frequency 4khz --cpg 1 --chg 1 --chh 1 $FLAG"
 sub() { local id; id=$(sbatch --parsable $SB "$@") || { echo "sbatch failed: $*" >&2; echo ""; return; }; echo ${id%%;*}; }
