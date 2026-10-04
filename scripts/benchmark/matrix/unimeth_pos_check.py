@@ -27,9 +27,10 @@ fa = pysam.FastaFile(a.ref)
 D = {"+": collections.Counter(), "-": collections.Counter()}       # delta tallies, bam convention
 R = {"+": collections.Counter(), "-": collections.Counter()}       # delta tallies, read convention
 base = {"+": collections.defaultdict(collections.Counter), "-": collections.defaultdict(collections.Counter)}
-per_read = collections.defaultdict(lambda: [0, 0]); strand_mismatch = missing = n = 0
+per_read = collections.defaultdict(lambda: [0, 0]); strand_mismatch = missing = n = neg = 0
 basecache = {}
 def refbase(ch, p):
+    if p < 0 or ch not in fa.references: return "?"
     k = (ch, p // 100000)
     if k not in basecache:
         basecache[k] = fa.fetch(ch, k[1] * 100000, min(fa.get_reference_length(ch), k[1] * 100000 + 100000)).upper()
@@ -43,6 +44,7 @@ with open(a.calls) as f:
         try: pos = int(c[1]); rp = int(c[5])
         except ValueError: continue
         n += 1; ch, s, rid = c[0], c[2], c[4]
+        if pos < 0: neg += 1
         al = aln.get(rid)
         if al is None: missing += 1; continue
         rch, rs, m = al; L = len(m)
@@ -56,7 +58,7 @@ with open(a.calls) as f:
             if tally is D[s]:
                 base[s]["agree" if d == 0 else "disagree"][refbase(ch, pos)] += 1
                 pr_ok = per_read[rid]; pr_ok[1] += 1; pr_ok[0] += (d == 0)
-print(f"calls of type {a.type}: {n:,}; read not in BAM primaries: {missing:,}; strand differs from BAM: {strand_mismatch:,}")
+print(f"calls of type {a.type}: {n:,}; read not in BAM primaries: {missing:,}; strand differs from BAM: {strand_mismatch:,}; negative pos: {neg:,}")
 for s in "+-":
     tot = sum(D[s].values()) or 1
     print(f"\nstrand {s}: {tot:,} calls")
