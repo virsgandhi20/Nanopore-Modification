@@ -55,7 +55,7 @@ with open(a.calls) as f:
             if pr < 0: tally["in insertion"] += 1; continue
             d = pos - pr
             tally[d if abs(d) <= 2 else ("<-2" if d < 0 else ">2")] += 1
-            if tally is D[s]:
+            if tally is R[s]:   # the read-as-sequenced convention is UniMeth's (read_pos counts from the read's first base on both strands)
                 base[s]["agree" if d == 0 else "disagree"][refbase(ch, pos)] += 1
                 pr_ok = per_read[rid]; pr_ok[1] += 1; pr_ok[0] += (d == 0)
 print(f"calls of type {a.type}: {n:,}; read not in BAM primaries: {missing:,}; strand differs from BAM: {strand_mismatch:,}; negative pos: {neg:,}")
@@ -70,5 +70,5 @@ for s in "+-":
 h = collections.Counter()
 for ok, t in per_read.values():
     if t >= 20: h[min(int(10 * ok / t), 9)] += 1
-print("\nper-read agreement fraction (reads with >= 20 calls), decile histogram 0.0-0.1 ... 0.9-1.0:")
+print("\nper-read agreement fraction under the read-as-sequenced convention (reads with >= 20 calls), decile histogram 0.0-0.1 ... 0.9-1.0:")
 print("  " + "  ".join(f"{k/10:.1f}-{(k+1)/10:.1f}: {h.get(k,0):,}" for k in range(10)))

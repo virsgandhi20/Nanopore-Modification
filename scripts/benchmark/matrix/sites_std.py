@@ -23,7 +23,7 @@ a = ap.parse_args()
 n_out = 0
 if a.tool == "unimeth":
     keep = {t.strip() for t in a.types.split(",") if t.strip()}
-    acc = {}; n_in = n_drop = 0; seen_types = {}
+    acc = {}; n_in = n_drop = n_neg = 0; seen_types = {}
     with open(a.src) as f:
         for line in f:
             c = line.rstrip("\n").split("\t")
@@ -36,6 +36,8 @@ if a.tool == "unimeth":
                 p = float(c[8]); pos = int(c[1])
             except ValueError:
                 continue
+            if pos < 0:   # a read base inside an insertion: UniMeth reports no reference position (negative); it can match no candidate
+                n_neg += 1; continue
             k = (c[0], pos, c[2]); v = acc.get(k)
             if v is None:
                 acc[k] = [1, p, 1 if p > 0.5 else 0]
@@ -44,7 +46,7 @@ if a.tool == "unimeth":
     with open(a.out, "w") as fo:
         for (chrom, pos, strand), (n, ps, nc) in sorted(acc.items()):
             fo.write(f"{chrom}\t{pos}\t{n}\t{nc / n:.6f}\t{ps / n:.6f}\n"); n_out += 1
-    print(f"sites_std unimeth: {n_in:,} per-read calls, types {seen_types}, kept {n_in - n_drop:,} -> {n_out:,} site/strand rows")
+    print(f"sites_std unimeth: {n_in:,} per-read calls, types {seen_types}, kept {n_in - n_drop:,} ({n_neg:,} inside insertions, no reference position) -> {n_out:,} site/strand rows")
 elif a.tool == "deepmod2":
     here = os.path.dirname(os.path.abspath(__file__)); tmp = a.out + ".dm2.tmp"
     r = subprocess.run([sys.executable, os.path.join(here, "..", "deepmod2_sites.py"), a.src, tmp], capture_output=True, text=True)
