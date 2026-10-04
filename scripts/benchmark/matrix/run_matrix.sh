@@ -222,6 +222,7 @@ _score)
     # CPGMERGE=row1,row2: variant scoring of CpG rows with both strands of a CpG summed before the floor; written to
     # matrix_{long,grid}_cpgmerge.tsv and status/score_cpgmerge.txt, the main results are untouched
     EXTRA=""; SFX=""; [ -n "${CPGMERGE:-}" ] && { EXTRA="--cpg-merge $CPGMERGE --only $CPGMERGE --suffix _cpgmerge"; SFX=_cpgmerge; }
+    [ -n "${NAFRAC:-}" ] && { EXTRA="$EXTRA --na-frac $NAFRAC --suffix _nona"; SFX=_nona; }   # NAFRAC=0: every cell keeps its number (no N/A rule), written beside the main results as matrix_{long,grid}_nona.tsv
     eval "$ENVACT"; python $HERE/score_matrix.py --work $W --datasets $HERE/datasets.tsv --rows $HERE/rows.tsv --tools "$TOOLS" --repo $REPO --samtools $SAM $EXTRA 2>&1 | tee $W/status/score$SFX.txt ;;
 
 *)  echo "MODE must be check | basecall | prep | infer | score | audit | all | status"; exit 1 ;;

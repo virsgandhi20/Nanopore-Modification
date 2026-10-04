@@ -20,6 +20,7 @@ ap.add_argument("--only", default="", help="comma-separated row ids to (re)score
 ap.add_argument("--force", action="store_true", help="rebuild cached candidate/site files")
 ap.add_argument("--cpg-merge", default="", help="comma-separated row ids whose two CpG strands are summed into one site before the floor (bisulfite convention)")
 ap.add_argument("--suffix", default="", help="suffix for the output files and per-row caches, e.g. _cpgmerge, so a variant scoring never overwrites the main results")
+ap.add_argument("--na-frac", type=float, default=0.01, help="a cell whose tool scored fewer than this fraction of the row's candidates is reported as N/A (0 = never: every cell keeps its number, a tool with no calls lands at 0.5 by ties)")
 a = ap.parse_args()
 cpg_merge = {x for x in a.cpg_merge.split(",") if x}
 ds = load_datasets(a.datasets); rows = load_rows(a.rows, ds); tools = a.tools.split()
@@ -191,7 +192,7 @@ for r in rows:
             long_rows.append((r["row"], tool, metric, res["status"], res.get("n_sites", ""), res.get("n_pos", ""), res.get("pos_rate", ""),
                               res.get("auroc", ""), res.get("auprc", ""), res.get("filled", ""), res.get("detail", "")))
             # Bhargav (Sep 29): a tool that emitted nothing at all on a row is "not applicable", not 0.5; partial calls keep their number
-            if res["status"] == "ok" and res.get("filled") and res.get("n_sites") and int(res["filled"]) >= 0.99 * int(res["n_sites"]):   # < 1% of candidates scored
+            if a.na_frac > 0 and res["status"] == "ok" and res.get("filled") and res.get("n_sites") and int(res["filled"]) >= (1 - a.na_frac) * int(res["n_sites"]):   # fewer than na_frac of the candidates scored
                 res["status"] = "N/A"; long_rows[-1] = long_rows[-1][:3] + ("N/A",) + long_rows[-1][4:]
             if metric == primary: grid[(r["row"], tool)] = res.get("auroc", res["status"]) if res["status"] == "ok" else res["status"]
             log(f"  {tool:14s} {metric:9s} {res['status']:7s} AUROC {res.get('auroc', '-'):7s} AUPRC {res.get('auprc', '-'):7s} n {res.get('n_sites', '-'):>9s} filled {res.get('filled', '-'):>8s} {res.get('detail', '')}")
