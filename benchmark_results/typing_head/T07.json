@@ -1,0 +1,127 @@
+{
+ "name": "T07",
+ "args": {
+  "repo": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod",
+  "checkpoint": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod/checkpoints/rawmod.pt",
+  "files": "none=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_control_plus.h5,5mC=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_5mC_plus.h5,5hmC=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_5hmC_plus.h5,6mA=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_6mA_plus.h5",
+  "eval_files": "",
+  "classes": "none,5mC,5hmC,6mA",
+  "mode": "frozen",
+  "epochs": 6,
+  "batch": 128,
+  "lr": 0.0001,
+  "head_lr": 0.001,
+  "detect_weight": 1.0,
+  "max_per_class": 3000,
+  "test_frac": 20,
+  "seed": 0,
+  "device": "",
+  "out": "/fs/cbcb-lab/storm/vgandhi/typing_head/T07",
+  "name": "T07",
+  "note": "frozen encoder, rawmod.pt (all data)",
+  "selftest": false
+ },
+ "device": "cuda",
+ "warnings": [],
+ "checkpoint": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod/checkpoints/rawmod.pt",
+ "classes": [
+  "none",
+  "5mC",
+  "5hmC",
+  "6mA"
+ ],
+ "unknown_chems": [],
+ "n_images": {
+  "none": 2560,
+  "5mC": 1280,
+  "5hmC": 1280,
+  "6mA": 1280
+ },
+ "detection_auroc_test_before": 0.988,
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 0.923,
+   "test_read_macro_f1": 0.5129,
+   "test_image_acc": 0.6471
+  },
+  {
+   "epoch": 2,
+   "train_loss": 0.7105,
+   "test_read_macro_f1": 0.5678,
+   "test_image_acc": 0.695
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.611,
+   "test_read_macro_f1": 0.5962,
+   "test_image_acc": 0.725
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.5564,
+   "test_read_macro_f1": 0.6063,
+   "test_image_acc": 0.7243
+  },
+  {
+   "epoch": 5,
+   "train_loss": 0.532,
+   "test_read_macro_f1": 0.6114,
+   "test_image_acc": 0.7286
+  },
+  {
+   "epoch": 6,
+   "train_loss": 0.5273,
+   "test_read_macro_f1": 0.6597,
+   "test_image_acc": 0.7357
+  }
+ ],
+ "test": {
+  "n_images": 1400,
+  "n_reads": 21000,
+  "read_acc": 0.7326,
+  "read_macro_f1": 0.6597,
+  "read_recall": {
+   "none": 0.9135,
+   "5mC": 0.8789,
+   "5hmC": 0.1286,
+   "6mA": 0.9166
+  },
+  "image_acc": 0.7357,
+  "image_macro_f1": 0.6552,
+  "confusion_reads_rows_true_cols_pred": [
+   [
+    7468,
+    79,
+    24,
+    604
+   ],
+   [
+    122,
+    4087,
+    356,
+    85
+   ],
+   [
+    59,
+    3893,
+    598,
+    100
+   ],
+   [
+    293,
+    0,
+    1,
+    3231
+   ]
+  ],
+  "pair_5mC_vs_5hmC": {
+   "n_reads": 9300,
+   "read_auroc": 0.6167,
+   "read_acc": 0.5286
+  }
+ },
+ "detection_auroc_test_after": 0.988,
+ "status": "OK",
+ "minutes": 0.7
+}

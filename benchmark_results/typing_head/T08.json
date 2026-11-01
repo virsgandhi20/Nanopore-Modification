@@ -1,0 +1,127 @@
+{
+ "name": "T08",
+ "args": {
+  "repo": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod",
+  "checkpoint": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod/checkpoints/region_holdout/mixed.pt",
+  "files": "none=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_control_plus.h5,5mC=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_5mC_plus.h5,5hmC=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_5hmC_plus.h5,6mA=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_6mA_plus.h5",
+  "eval_files": "",
+  "classes": "none,5mC,5hmC,6mA",
+  "mode": "finetune",
+  "epochs": 6,
+  "batch": 128,
+  "lr": 0.0001,
+  "head_lr": 0.001,
+  "detect_weight": 0.0,
+  "max_per_class": 3000,
+  "test_frac": 20,
+  "seed": 0,
+  "device": "",
+  "out": "/fs/cbcb-lab/storm/vgandhi/typing_head/T08",
+  "name": "T08",
+  "note": "as T02 without the detection term: does detection degrade?",
+  "selftest": false
+ },
+ "device": "cuda",
+ "warnings": [],
+ "checkpoint": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod/checkpoints/region_holdout/mixed.pt",
+ "classes": [
+  "none",
+  "5mC",
+  "5hmC",
+  "6mA"
+ ],
+ "unknown_chems": [],
+ "n_images": {
+  "none": 2560,
+  "5mC": 1280,
+  "5hmC": 1280,
+  "6mA": 1280
+ },
+ "detection_auroc_test_before": 0.9588,
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 0.9095,
+   "test_read_macro_f1": 0.5302,
+   "test_image_acc": 0.6557
+  },
+  {
+   "epoch": 2,
+   "train_loss": 0.6003,
+   "test_read_macro_f1": 0.5703,
+   "test_image_acc": 0.6793
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.5149,
+   "test_read_macro_f1": 0.6718,
+   "test_image_acc": 0.7229
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.479,
+   "test_read_macro_f1": 0.6412,
+   "test_image_acc": 0.7136
+  },
+  {
+   "epoch": 5,
+   "train_loss": 0.4548,
+   "test_read_macro_f1": 0.6848,
+   "test_image_acc": 0.7386
+  },
+  {
+   "epoch": 6,
+   "train_loss": 0.4452,
+   "test_read_macro_f1": 0.7276,
+   "test_image_acc": 0.76
+  }
+ ],
+ "test": {
+  "n_images": 1400,
+  "n_reads": 21000,
+  "read_acc": 0.7563,
+  "read_macro_f1": 0.7276,
+  "read_recall": {
+   "none": 0.9191,
+   "5mC": 0.4933,
+   "5hmC": 0.6677,
+   "6mA": 0.8426
+  },
+  "image_acc": 0.76,
+  "image_macro_f1": 0.7316,
+  "confusion_reads_rows_true_cols_pred": [
+   [
+    7514,
+    109,
+    0,
+    552
+   ],
+   [
+    197,
+    2294,
+    2053,
+    106
+   ],
+   [
+    128,
+    1384,
+    3105,
+    33
+   ],
+   [
+    541,
+    14,
+    0,
+    2970
+   ]
+  ],
+  "pair_5mC_vs_5hmC": {
+   "n_reads": 9300,
+   "read_auroc": 0.6721,
+   "read_acc": 0.6157
+  }
+ },
+ "detection_auroc_test_after": 0.9776,
+ "status": "OK",
+ "minutes": 0.6
+}

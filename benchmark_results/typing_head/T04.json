@@ -1,0 +1,129 @@
+{
+ "name": "T04",
+ "args": {
+  "repo": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod",
+  "checkpoint": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod/checkpoints/leaveout/ont5hmC.pt",
+  "files": "none=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_control_plus.h5,5mC=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_5mC_plus.h5,5hmC=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_5hmC_plus.h5,6mA=/fs/cbcb-lab/storm/bds062/rawmod_strand_resolved/features/ONT_6mA_plus.h5",
+  "eval_files": "",
+  "classes": "none,5mC,6mA",
+  "mode": "finetune",
+  "epochs": 6,
+  "batch": 128,
+  "lr": 0.0001,
+  "head_lr": 0.001,
+  "detect_weight": 1.0,
+  "max_per_class": 3000,
+  "test_frac": 20,
+  "seed": 0,
+  "device": "",
+  "out": "/fs/cbcb-lab/storm/vgandhi/typing_head/T04",
+  "name": "T04",
+  "note": "open set: 5hmC unknown, encoder never saw the 5hmC oligo library (leaveout/ont5hmC.pt)",
+  "selftest": false
+ },
+ "device": "cuda",
+ "warnings": [],
+ "checkpoint": "/fs/cbcb-lab/storm/vgandhi/rawmod-test/RawMod/checkpoints/leaveout/ont5hmC.pt",
+ "classes": [
+  "none",
+  "5mC",
+  "6mA"
+ ],
+ "unknown_chems": [
+  "5hmC"
+ ],
+ "n_images": {
+  "none": 2560,
+  "5mC": 1280,
+  "5hmC": 1280,
+  "6mA": 1280
+ },
+ "detection_auroc_test_before": 0.9339,
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 0.9083,
+   "test_read_macro_f1": 0.7647,
+   "test_image_acc": 0.789
+  },
+  {
+   "epoch": 2,
+   "train_loss": 0.5429,
+   "test_read_macro_f1": 0.8263,
+   "test_image_acc": 0.8376
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.4225,
+   "test_read_macro_f1": 0.8576,
+   "test_image_acc": 0.878
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.3558,
+   "test_read_macro_f1": 0.8681,
+   "test_image_acc": 0.8817
+  },
+  {
+   "epoch": 5,
+   "train_loss": 0.2972,
+   "test_read_macro_f1": 0.8871,
+   "test_image_acc": 0.8982
+  },
+  {
+   "epoch": 6,
+   "train_loss": 0.2596,
+   "test_read_macro_f1": 0.8958,
+   "test_image_acc": 0.9018
+  }
+ ],
+ "test": {
+  "n_images": 1090,
+  "n_reads": 16350,
+  "read_acc": 0.9009,
+  "read_macro_f1": 0.8958,
+  "read_recall": {
+   "none": 0.8869,
+   "5mC": 0.9166,
+   "6mA": 0.9129
+  },
+  "image_acc": 0.9018,
+  "image_macro_f1": 0.8973,
+  "confusion_reads_rows_true_cols_pred": [
+   [
+    7250,
+    37,
+    888
+   ],
+   [
+    242,
+    4262,
+    146
+   ],
+   [
+    297,
+    10,
+    3218
+   ]
+  ]
+ },
+ "detection_auroc_test_after": 0.9741,
+ "open_set": {
+  "n_unknown_reads": 19200,
+  "chems": [
+   "5hmC"
+  ],
+  "auroc_known_vs_unknown_reads": 0.3226,
+  "unknown_flagged_at_tpr95": 0.0371,
+  "unknown_assigned_to": {
+   "none": 0.0713,
+   "5mC": 0.8933,
+   "6mA": 0.0354
+  },
+  "image_level": {
+   "auroc_known_vs_unknown": 0.3312
+  }
+ },
+ "status": "OK",
+ "minutes": 0.6
+}
